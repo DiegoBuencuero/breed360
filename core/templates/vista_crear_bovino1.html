@@ -1,0 +1,294 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block plugin_css %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    {% if messages %}
+    <div class="mb-4">
+        {% for message in messages %}
+        <div class="alert {{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
+            <i class="mdi 
+                {% if 'success' in message.tags %}mdi-check-circle
+                {% elif 'danger' in message.tags %}mdi-alert-circle
+                {% elif 'warning' in message.tags %}mdi-alert
+                {% else %}mdi-information{% endif %}
+                me-2"></i>
+            <div>{{ message }}</div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="upload-card">
+        <div class="upload-header d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-4">
+            <div>
+                <h3 class="mb-1">
+                    <i class="mdi mdi-cow icon-agro"></i>
+                    {% translate "Bovinos" %}
+                </h3>
+                <div class="small">
+                    <h6 class="mb-1 mt-2">
+                        {% if modificacion %}
+                            {% translate "Edición de bovino" %}
+                        {% else %}
+                            {% translate "Creación de nuevo bovino" %}
+                        {% endif %}
+                    </h6>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-12 grid-margin stretch-card">
+            <div class="card">
+                <div class="card-body">
+                    <form class="form-sample" method="post">
+                        {% csrf_token %}
+
+                        <p class="card-description">
+                            {% translate "Información general" %}
+                        </p>
+
+                        <!-- SOLO ESTABLECIMIENTO -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% translate "Establecimiento" %}</label>
+                                    <div class="col-sm-9">
+                                        {{ form.establecimiento_actual }}
+                                        {{ form.establecimiento_actual.errors }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% translate "Número interno" %}</label>
+                                    <div class="col-sm-9">
+                                        {{ form.numero_interno }}
+                                        {{ form.numero_interno.errors }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% translate "Caravana SENASA" %}</label>
+                                    <div class="col-sm-9">
+                                        {{ form.caravana_senasa }}
+                                        {{ form.caravana_senasa.errors }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% translate "Tatuaje" %}</label>
+                                    <div class="col-sm-9">
+                                        {{ form.tatuaje }}
+                                        {{ form.tatuaje.errors }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% translate "Apodo" %}</label>
+                                    <div class="col-sm-9">
+                                        {{ form.nombre_apodo }}
+                                        {{ form.nombre_apodo.errors }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% translate "Sexo" %}</label>
+                                    <div class="col-sm-9">
+                                        {{ form.sexo }}
+                                        {{ form.sexo.errors }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% translate "Fecha nacimiento" %}</label>
+                                    <div class="col-sm-9">
+                                        {{ form.fecha_nacimiento }}
+                                        {{ form.fecha_nacimiento.errors }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% translate "Raza" %}</label>
+                                    <div class="col-sm-9">
+                                        {{ form.raza }}
+                                        {{ form.raza.errors }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% translate "Subtipo" %}</label>
+                                    <div class="col-sm-9">
+                                        {{ form.subtipo }}
+                                        {{ form.subtipo.errors }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% translate "Categoría actual" %}</label>
+                                    <div class="col-sm-9">
+                                        {{ form.categoria_actual }}
+                                        {{ form.categoria_actual.errors }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% translate "Destino productivo" %}</label>
+                                    <div class="col-sm-9">
+                                        {{ form.destino_productivo_actual }}
+                                        {{ form.destino_productivo_actual.errors }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <p class="card-description mt-4">
+                            {% translate "Genealogía" %}
+                        </p>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% translate "Madre" %}</label>
+                                    <div class="col-sm-9">
+                                        {{ form.madre }}
+                                        {{ form.madre.errors }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% translate "Padre" %}</label>
+                                    <div class="col-sm-9">
+                                        {{ form.padre }}
+                                        {{ form.padre.errors }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <p class="card-description mt-4">
+                            {% translate "Estado" %}
+                        </p>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% translate "Activo" %}</label>
+                                    <div class="col-sm-9">
+                                        {{ form.activo }}
+                                        {{ form.activo.errors }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">{% translate "Observaciones" %}</label>
+                                    <div class="col-sm-9">
+                                        {{ form.observaciones }}
+                                        {{ form.observaciones.errors }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-3 d-flex gap-2">
+                            {% if modificacion %}
+                                <button type="submit" name="ok" class="btn btn-primary">{% translate "Actualizar" %}</button>
+                                <button type="submit" name="borrar" class="btn btn-danger">{% translate "Borrar" %}</button>
+                            {% else %}
+                                <button type="submit" name="ok" class="btn btn-primary">{% translate "Nuevo" %}</button>
+                            {% endif %}
+
+                            <a href="{% url 'vista_crear_bovino' %}" class="btn btn-dark">{% translate "Cancelar" %}</a>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- TABLA SIN CAMBIOS -->
+        <div class="col-lg-12 grid-margin stretch-card">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">{% translate "Bovinos" %}</h4>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>N°</th>
+                                    <th>Caravana</th>
+                                    <th>Tatuaje</th>
+                                    <th>Sexo</th>
+                                    <th>Raza</th>
+                                    <th>Categoría</th>
+                                    <th>Destino</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for bovino in bovinos %}
+                                <tr>
+                                    <td>{{ bovino.numero_interno }}</td>
+                                    <td>{{ bovino.caravana_senasa|default:"-" }}</td>
+                                    <td>{{ bovino.tatuaje|default:"-" }}</td>
+                                    <td>{{ bovino.get_sexo_display }}</td>
+                                    <td>{{ bovino.raza }}</td>
+                                    <td>{{ bovino.categoria_actual }}</td>
+                                    <td>{{ bovino.destino_productivo_actual }}</td>
+                                    <td>
+                                        <a href="{% url 'vista_editar_bovino' bovino.id %}" class="btn btn-sm btn-outline-primary">Editar</a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center">Sin datos</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

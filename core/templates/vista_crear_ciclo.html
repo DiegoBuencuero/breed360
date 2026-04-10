@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block plugin_css %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    {% if messages %}
+    <div class="mb-4">
+        {% for message in messages %}
+        <div class="alert {{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
+            <i class="mdi 
+                {% if 'success' in message.tags %}mdi-check-circle
+                {% elif 'danger' in message.tags %}mdi-alert-circle
+                {% elif 'warning' in message.tags %}mdi-alert
+                {% else %}mdi-information{% endif %}
+                me-2"></i>
+
+            <div>{{ message }}</div>
+
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="upload-card">
+        <div class="upload-header d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-4">
+            <div>
+                <h3 class="mb-1">
+                    <i class="mdi mdi-sprout icon-agro me-2"></i>
+                    {% translate "Ciclos Productivos" %}
+                </h3>
+                <div class="small">
+                    <h6 class="mb-1 mt-2">
+                        {% if modificacion %}
+                            {% translate "Edición de ciclo agrícola" %}
+                        {% else %}
+                            {% translate "Creación de nuevo ciclo agrícola" %}
+                        {% endif %}
+                    </h6>
+                </div>
+            </div>
+
+            <div>
+                <a href="{% url 'vista_lista_ciclos' %}" class="btn btn-success">
+                    <i class="mdi mdi-arrow-left me-2"></i>
+                    {% translate "Volver" %}
+                </a>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-12 grid-margin stretch-card">
+                <div class="card">
+                    <div class="card-body">
+                        <form class="form-sample" method="post">
+                            {% csrf_token %}
+
+                            <p class="card-description">
+                                {% translate "Información general" %}
+                            </p>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group row">
+                                        <label class="col-sm-3 col-form-label">
+                                            {% translate "Campo" %}
+                                        </label>
+                                        <div class="col-sm-9">
+                                            {{ form.campo }}
+                                            {{ form.campo.errors }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-group row">
+                                        <label class="col-sm-3 col-form-label">
+                                            {% translate "Campaña" %}
+                                        </label>
+                                        <div class="col-sm-9">
+                                            {{ form.campana }}
+                                            {{ form.campana.errors }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group row">
+                                        <label class="col-sm-3 col-form-label">
+                                            {% translate "Cultivo" %}
+                                        </label>
+                                        <div class="col-sm-9">
+                                            {{ form.cultivo }}
+                                            {{ form.cultivo.errors }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-group row">
+                                        <label class="col-sm-3 col-form-label">
+                                            {% translate "Superficie (ha)" %}
+                                        </label>
+                                        <div class="col-sm-9">
+                                            {{ form.superficie_ha }}
+                                            {{ form.superficie_ha.errors }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group row">
+                                        <label class="col-sm-3 col-form-label">
+                                            {% translate "Fecha de inicio" %}
+                                        </label>
+                                        <div class="col-sm-9">
+                                            {{ form.fecha_inicio }}
+                                            {{ form.fecha_inicio.errors }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {% if form.non_field_errors %}
+                            <div class="alert alert-danger mt-3">
+                                {{ form.non_field_errors }}
+                            </div>
+                            {% endif %}
+
+                            <div class="mt-4 d-flex gap-2">
+                                {% if modificacion %}
+                                    <button type="submit" name="ok" class="btn btn-primary">
+                                        {% translate "Actualizar" %}
+                                    </button>
+
+                                    <button type="submit" name="borrar" class="btn btn-danger">
+                                        {% translate "Borrar" %}
+                                    </button>
+                                {% else %}
+                                    <button type="submit" name="ok" class="btn btn-primary">
+                                        {% translate "Crear ciclo" %}
+                                    </button>
+                                {% endif %}
+
+                                <a href="{% url 'vista_lista_ciclos' %}" class="btn btn-dark">
+                                    {% translate "Cancelar" %}
+                                </a>
+                            </div>
+
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_js %}
+{% endblock %}

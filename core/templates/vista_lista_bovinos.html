@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block plugin_css %}
+<style>
+    .table thead th {
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #4b5563;
+        white-space: nowrap;
+    }
+
+    .badge-estado-activo {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0.45rem 0.7rem;
+        border-radius: 50rem;
+        background-color: rgba(40, 167, 69, 0.12);
+        color: #2e7d32;
+        border: 1px solid rgba(40, 167, 69, 0.25);
+        font-weight: 600;
+    }
+
+    .badge-estado-inactivo {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0.45rem 0.7rem;
+        border-radius: 50rem;
+        background-color: rgba(108, 117, 125, 0.12);
+        color: #5f6b73;
+        border: 1px solid rgba(108, 117, 125, 0.25);
+        font-weight: 600;
+    }
+
+    .btn-ver-bovino {
+        border-radius: 50rem;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    {% if messages %}
+    <div class="mb-4">
+        {% for message in messages %}
+        <div class="alert {{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
+            <i class="mdi 
+                {% if 'success' in message.tags %}mdi-check-circle
+                {% elif 'danger' in message.tags %}mdi-alert-circle
+                {% elif 'warning' in message.tags %}mdi-alert
+                {% else %}mdi-information{% endif %}
+                me-2"></i>
+
+            <div>{{ message }}</div>
+
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="upload-card">
+        <div class="upload-header d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-4">
+            <div>
+                <h3 class="mb-1">
+                    <i class="mdi mdi-cow icon-agro me-1"></i>
+                    {% translate "Bovinos" %}
+                </h3>
+                <div class="small text-muted">
+                    <h6 class="mb-1 mt-2">
+                        {% translate "Gestión de bovinos" %}
+                    </h6>
+                </div>
+            </div>
+
+            <div>
+                <a href="{% url 'vista_crear_bovino' %}" class="btn btn-success">
+                    <i class="mdi mdi-plus-circle-outline me-2"></i>
+                    {% translate "Nuevo bovino" %}
+                </a>
+            </div>
+        </div>
+
+        <div class="col-lg-12 grid-margin stretch-card">
+            <div class="card">
+                <div class="card-body">
+                    <div id="contenedor-tabla-bovinos">
+                        <div class="table-responsive">
+                            <table class="table table-striped align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>{% translate "N° interno" %}</th>
+                                        <th>{% translate "Caravana" %}</th>
+                                        <th>{% translate "Tatuaje" %}</th>
+                                        <th>{% translate "Apodo" %}</th>
+                                        <th>{% translate "Sexo" %}</th>
+                                        <th>{% translate "Establecimiento" %}</th>
+                                        <th>{% translate "Raza" %}</th>
+                                        <th>{% translate "Categoría" %}</th>
+                                        <th>{% translate "Destino" %}</th>
+                                        <th>{% translate "Estado" %}</th>
+                                        <th class="text-center">{% translate "Acciones" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for bovino in bovinos %}
+                                    <tr>
+                                        <td>{{ bovino.numero_interno }}</td>
+                                        <td>{{ bovino.caravana_senasa|default:"-" }}</td>
+                                        <td>{{ bovino.tatuaje|default:"-" }}</td>
+                                        <td>{{ bovino.nombre_apodo|default:"-" }}</td>
+                                        <td>{{ bovino.get_sexo_display }}</td>
+                                        <td>{{ bovino.establecimiento_actual|default:"-" }}</td>
+                                        <td>{{ bovino.raza }}</td>
+                                        <td>{{ bovino.categoria_actual }}</td>
+                                        <td>{{ bovino.destino_productivo_actual }}</td>
+                                        <td>
+                                            {% if bovino.activo %}
+                                                <span class="badge-estado-activo">
+                                                    <i class="mdi mdi-check-circle-outline"></i>
+                                                    {% translate "Activo" %}
+                                                </span>
+                                            {% else %}
+                                                <span class="badge-estado-inactivo">
+                                                    <i class="mdi mdi-close-circle-outline"></i>
+                                                    {% translate "Inactivo" %}
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            <a href="{% url 'vista_detalle_bovino' bovino.id %}" class="btn btn-sm btn-outline-success btn-ver-bovino">
+                                                <i class="mdi mdi-eye-outline me-1"></i>
+                                                {% translate "Ver" %}
+                                            </a>
+                                            <a href="{% url 'vista_editar_bovino' bovino.id %}" class="btn btn-sm btn-outline-primary btn-ver-bovino">
+                                                <i class="mdi mdi-pencil-outline me-1"></i>
+                                                {% translate "Editar" %}
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="11" class="text-center text-muted">
+                                            {% translate "No hay bovinos cargados" %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
