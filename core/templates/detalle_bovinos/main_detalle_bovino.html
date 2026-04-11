@@ -202,7 +202,6 @@
 
     <div class="upload-card">
 
-        <!-- Header -->
         <div class="upload-header d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-4">
             <div>
                 <h3 class="mb-1">
@@ -242,7 +241,6 @@
             </div>
         </div>
 
-        <!-- Ficha principal -->
         <div class="card detalle-bovino-card mb-4">
             <div class="card-body">
                 <div class="row g-4 align-items-center">
@@ -323,7 +321,6 @@
             </div>
         </div>
 
-        <!-- Cards resumen -->
         <div class="row g-3 mb-4">
             <div class="col-6 col-md-4 col-xl-2">
                 <div class="card-resumen-bovino">
@@ -392,7 +389,6 @@
             </div>
         </div>
 
-        <!-- Tabs -->
         <ul class="nav nav-pills mb-4" id="animalTab" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="resumen-tab" data-bs-toggle="pill" data-bs-target="#resumen" type="button">{% translate "Resumen" %}</button>
@@ -414,199 +410,29 @@
             </li>
         </ul>
 
-        <!-- Contenido -->
         <div class="tab-content" id="animalTabContent">
 
             <div class="tab-pane fade show active" id="resumen" role="tabpanel">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="mb-3">{% translate "Datos generales y observaciones" %}</h5>
-                        <div class="bloque-suave">
-                            {{ bovino.observaciones|default:"Sin observaciones registradas." }}
-                        </div>
-                    </div>
-                </div>
+                {% include "detalle_bovinos/_resumen.html" %}
             </div>
 
             <div class="tab-pane fade" id="genealogia" role="tabpanel">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-body d-flex align-items-center gap-3">
-                                <div class="detalle-icon-box icon-azul mb-0">
-                                    <i class="mdi mdi-gender-female"></i>
-                                </div>
-                                <div>
-                                    <div class="mini-label">{% translate "Madre" %}</div>
-                                    <div class="mini-valor">{{ bovino.madre|default:"Desconocida" }}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-body d-flex align-items-center gap-3">
-                                <div class="detalle-icon-box icon-verde mb-0">
-                                    <i class="mdi mdi-gender-male"></i>
-                                </div>
-                                <div>
-                                    <div class="mini-label">{% translate "Padre" %}</div>
-                                    <div class="mini-valor">{{ bovino.padre|default:"Desconocido" }}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                {% include "detalle_bovinos/_genealogia.html" %}
             </div>
 
             <div class="tab-pane fade" id="mediciones" role="tabpanel">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="mb-3">{% translate "Mediciones" %}</h5>
-                        <div class="table-responsive">
-                            <table class="table tabla-detalle align-middle">
-                                <thead>
-                                    <tr>
-                                        <th>{% translate "Fecha" %}</th>
-                                        <th>{% translate "Tipo" %}</th>
-                                        <th>{% translate "Valor" %}</th>
-                                        <th>{% translate "Unidad" %}</th>
-                                        <th>{% translate "Observación" %}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for medicion in mediciones %}
-                                    <tr>
-                                        <td>{{ medicion.fecha_medicion|date:"d/m/Y" }}</td>
-                                        <td>{{ medicion.tipo_medicion }}</td>
-                                        <td class="fw-bold">{{ medicion.valor }}</td>
-                                        <td>{{ medicion.unidad|default:"-" }}</td>
-                                        <td>{{ medicion.observacion|default:"-" }}</td>
-                                    </tr>
-                                    {% empty %}
-                                    <tr>
-                                        <td colspan="5" class="text-center text-muted py-4">{% translate "No hay registros de mediciones." %}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+                {% include "detalle_bovinos/_medicion.html" %}
             </div>
 
             <div class="tab-pane fade" id="sanidad" role="tabpanel">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="mb-3">{% translate "Sanidad" %}</h5>
-                        <div class="table-responsive">
-                            <table class="table tabla-detalle align-middle">
-                                <thead>
-                                    <tr>
-                                        <th>{% translate "Fecha" %}</th>
-                                        <th>{% translate "Evento / Tratamiento" %}</th>
-                                        <th>{% translate "Medicamento / Insumo" %}</th>
-                                        <th>{% translate "Dosis" %}</th>
-                                        <th>{% translate "Próx. refuerzo" %}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for item in sanitarios %}
-                                    <tr>
-                                        <td>{{ item.fecha|date:"d/m/Y" }}</td>
-                                        <td>{{ item.tipo_evento }}</td>
-                                        <td>{{ item.medicamento|default:"-" }}</td>
-                                        <td>{{ item.dosis|default:"-" }}</td>
-                                        <td>{{ item.fecha_refuerzo|date:"d/m/Y"|default:"-" }}</td>
-                                    </tr>
-                                    {% empty %}
-                                    <tr>
-                                        <td colspan="5" class="text-center text-muted py-4">{% translate "No hay registros sanitarios." %}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+                {% include "detalle_bovinos/_sanidad.html" %}
             </div>
 
             <div class="tab-pane fade" id="alimentacion" role="tabpanel">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="mb-3">{% translate "Alimentación" %}</h5>
-                        <div class="table-responsive">
-                            <table class="table tabla-detalle align-middle">
-                                <thead>
-                                    <tr>
-                                        <th>{% translate "Fecha" %}</th>
-                                        <th>{% translate "Ración / Alimento" %}</th>
-                                        <th>{% translate "Cantidad" %}</th>
-                                        <th>{% translate "Lote" %}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for item in alimentacion %}
-                                    <tr>
-                                        <td>{{ item.fecha|date:"d/m/Y" }}</td>
-                                        <td>{{ item.alimento }}</td>
-                                        <td>{{ item.cantidad }} {{ item.unidad }}</td>
-                                        <td>{{ item.lote_codigo|default:"-" }}</td>
-                                    </tr>
-                                    {% empty %}
-                                    <tr>
-                                        <td colspan="4" class="text-center text-muted py-4">{% translate "No hay registros de alimentación." %}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+                {% include "detalle_bovinos/_alimentacion.html" %}
             </div>
-
             <div class="tab-pane fade" id="breedplan" role="tabpanel">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="mb-3">{% translate "Índices Genéticos (EBVs)" %}</h5>
-                        <div class="table-responsive">
-                            <table class="table tabla-detalle align-middle">
-                                <thead>
-                                    <tr>
-                                        <th>{% translate "Rasgo" %}</th>
-                                        <th>{% translate "EBV" %}</th>
-                                        <th>{% translate "Precisión (%)" %}</th>
-                                        <th>{% translate "Percentil" %}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for item in breedplan %}
-                                    <tr>
-                                        <td>{{ item.rasgo|default:item.indice }}</td>
-                                        <td class="fw-bold">{{ item.valor }}</td>
-                                        <td>{{ item.precision|default:"-" }}{% if item.precision %}%{% endif %}</td>
-                                        <td>
-                                            {% if item.percentil %}
-                                                <div class="progress" style="height: 8px; border-radius: 999px;">
-                                                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ item.percentil|default:0 }}%"></div>
-                                                </div>
-                                                <small class="text-muted">{{ item.percentil }}%</small>
-                                            {% else %}
-                                                -
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                    {% empty %}
-                                    <tr>
-                                        <td colspan="4" class="text-center text-muted py-4">{% translate "No hay datos de Breedplan disponibles." %}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+                {% include "detalle_bovinos/_breedplan.html" %}
             </div>
 
         </div>

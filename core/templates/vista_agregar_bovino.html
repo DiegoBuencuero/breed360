@@ -1,486 +1,216 @@
 {% extends 'base.html' %}
-{% load static %}
 {% load i18n %}
 
-{% block plugin_css %}
-{% endblock %}
-
 {% block content %}
-<style>
-    .label-ciclo {
-        font-weight: 700 !important;
-        font-size: 1rem !important;
-        color: #374151 !important;
-    }
-</style>
-
 <div class="container-fluid">
 
     {% if messages %}
     <div class="mb-4">
         {% for message in messages %}
-        <div class="alert {{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
-            <i class="mdi
-                {% if 'success' in message.tags %}mdi-check-circle
-                {% elif 'danger' in message.tags %}mdi-alert-circle
-                {% elif 'warning' in message.tags %}mdi-alert
-                {% else %}mdi-information{% endif %}
-                me-2"></i>
-            <div>{{ message }}</div>
-            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
         {% endfor %}
     </div>
     {% endif %}
 
-    <div class="upload-card">
-
-        <div class="upload-header d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-4">
-            <div>
-                <h3 class="mb-1">
-                    <i class="mdi mdi-leaf icon-agro"></i>
-                    {% translate "Agregar Actividad Agrícola" %}
-                </h3>
-                <div class="small text-muted">
-                    {{ ciclo.nombre_lote }} · {{ ciclo.campo }}
-                </div>
-            </div>
-
-            <div>
-                <a href="{% url 'vista_detalle_ciclo' id_ciclo=ciclo.id %}" class="btn btn-outline-secondary">
-                    <i class="mdi mdi-arrow-left me-1"></i>
-                    {% translate "Volver" %}
-                </a>
-            </div>
-        </div>
-
-        <div class="row g-3 mb-4">
-            <div class="col-lg-3">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <div class="form-group row">
-                            <label class="col-sm-5 col-form-label label-ciclo">
-                                {% translate "Superficie" %}
-                            </label>
-                            <div class="col-sm-7 pt-2">
-                                {{ ciclo.superficie_ha }} ha
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-3">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <div class="form-group row">
-                            <label class="col-sm-5 col-form-label label-ciclo">
-                                {% translate "Cultivo" %}
-                            </label>
-                            <div class="col-sm-7 pt-2">
-                                {{ ciclo.cultivo }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-3">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <div class="form-group row">
-                            <label class="col-sm-5 col-form-label label-ciclo">
-                                {% translate "Inicio" %}
-                            </label>
-                            <div class="col-sm-7 pt-2">
-                                {{ ciclo.fecha_inicio|date:"d/m/Y" }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-3">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <div class="form-group row">
-                            <label class="col-sm-5 col-form-label label-ciclo">
-                                {% translate "Estado" %}
-                            </label>
-                            <div class="col-sm-7 pt-2">
-                                {% if ciclo.activa %}
-                                    <span class="badge bg-success">{% translate "Activo" %}</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">{% translate "Cerrado" %}</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-<div class="grid-margin stretch-card">
     <div class="card">
         <div class="card-body">
-            <form method="post" id="actividadForm">
+
+            <!-- HEADER -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3>
+                        {% if modificacion %}
+                            Editar bovino
+                        {% else %}
+                            Crear bovino
+                        {% endif %}
+                    </h3>
+                </div>
+
+                <a href="{% url 'vista_lista_bovinos' %}" class="btn btn-outline-secondary">
+                    Volver
+                </a>
+            </div>
+
+            <!-- FORM -->
+            <form method="post">
                 {% csrf_token %}
 
-                {% if actividad_form.non_field_errors %}
-                    <div class="alert alert-danger">
-                        {{ actividad_form.non_field_errors }}
-                    </div>
-                {% endif %}
-
-                <p class="card-description mb-4">
-                    {% translate "Datos de la actividad" %}
-                </p>
-
                 <div class="row g-3">
+
                     <div class="col-md-4">
-                        <label for="{{ actividad_form.fecha.id_for_label }}" class="form-label">
-                            {% translate "Fecha" %}
-                        </label>
-                        {{ actividad_form.fecha }}
-                        {{ actividad_form.fecha.errors }}
+                        <label>Rodeo</label>
+                        {{ form.rodeo }}
                     </div>
 
                     <div class="col-md-4">
-                        <label for="{{ actividad_form.tipo.id_for_label }}" class="form-label">
-                            {% translate "Tipo" %}
-                        </label>
-                        {{ actividad_form.tipo }}
-                        {{ actividad_form.tipo.errors }}
+                        <label>Caravana SENASA</label>
+                        {{ form.caravana_senasa }}
                     </div>
 
-                    <div class="col-md-4" id="subtipoContainer" style="display: none;">
-                        <label for="{{ actividad_form.subtipo.id_for_label }}" class="form-label">
-                            {% translate "Subtipo" %}
-                        </label>
-                        {{ actividad_form.subtipo }}
-                        {{ actividad_form.subtipo.errors }}
+                    <div class="col-md-4">
+                        <label>Tatuaje</label>
+                        {{ form.tatuaje }}
                     </div>
-                </div>
 
-                <div class="row mt-3">
+                    <div class="col-md-4">
+                        <label>Nombre</label>
+                        {{ form.nombre_apodo }}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Color</label>
+                        {{ form.color }}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Sexo</label>
+                        {{ form.sexo }}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Fecha nacimiento</label>
+                        {{ form.fecha_nacimiento }}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Raza</label>
+                        {{ form.raza }}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Subraza</label>
+                        {{ form.subraza }}
+                    </div>
+
+                    <div class="col-md-6">
+                        <label>Madre</label>
+                        {{ form.madre }}
+                    </div>
+
+                    <div class="col-md-6">
+                        <label>Padre genético</label>
+                        {{ form.padre_genetico }}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Categoría</label>
+                        {{ form.categoria_actual }}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Estado reproductivo</label>
+                        {{ form.estado_reproductivo }}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Destino productivo</label>
+                        {{ form.destino_productivo }}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Estado de vida</label>
+                        {{ form.estado_vida }}
+                    </div>
+
+                    <div class="col-md-4 d-flex align-items-center">
+                        {{ form.activo }} Activo
+                    </div>
+
                     <div class="col-12">
-                        <label for="{{ actividad_form.observaciones.id_for_label }}" class="form-label">
-                            {% translate "Observaciones" %}
-                        </label>
-                        {{ actividad_form.observaciones }}
-                        {{ actividad_form.observaciones.errors }}
+                        <label>Observaciones</label>
+                        {{ form.observaciones }}
                     </div>
+
                 </div>
 
-                <hr class="my-4">
-
-                <div class="card mb-4" id="insumosSection">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <strong>{% translate "Insumos utilizados" %}</strong>
-
-                        <button type="button" class="btn btn-success btn-sm" id="btnAgregarInsumo">
-                            <i class="mdi mdi-plus"></i>
-                            {% translate "Agregar insumo" %}
-                        </button>
-                    </div>
-
-                    <div class="card-body p-0">
-                        {{ insumo_formset.management_form }}
-
-                        {% if insumo_formset.non_form_errors %}
-                            <div class="alert alert-danger m-3">
-                                {{ insumo_formset.non_form_errors }}
-                            </div>
-                        {% endif %}
-
-                        <div class="table-responsive">
-                            <table class="table mb-0 align-middle">
-                                <thead>
-                                    <tr>
-                                        <th>{% translate "Producto" %}</th>
-                                        <th>{% translate "Dosis" %}</th>
-                                        <th>{% translate "Unidad" %}</th>
-                                        <th class="text-center">{% translate "Acción" %}</th>
-                                    </tr>
-                                </thead>
-
-                                <tbody id="insumosBody">
-                                    {% for form_insumo in insumo_formset %}
-                                        <tr class="insumo-row">
-                                            {% for hidden in form_insumo.hidden_fields %}
-                                                {{ hidden }}
-                                            {% endfor %}
-
-                                            <td>
-                                                {{ form_insumo.producto }}
-                                                {{ form_insumo.producto.errors }}
-                                            </td>
-
-                                            <td>
-                                                {{ form_insumo.dosis }}
-                                                {{ form_insumo.dosis.errors }}
-                                            </td>
-
-                                            <td>
-                                                {{ form_insumo.um }}
-                                                {{ form_insumo.um.errors }}
-                                            </td>
-
-                                            <td class="text-center">
-                                                <div class="d-none">
-                                                    {{ form_insumo.DELETE }}
-                                                </div>
-
-                                                <button type="button" class="btn btn-outline-danger btn-sm btn-remove-row">
-                                                    <i class="mdi mdi-delete"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <template id="empty-form-template">
-                            <tr class="insumo-row">
-                                {% for hidden in insumo_formset.empty_form.hidden_fields %}
-                                    {{ hidden }}
-                                {% endfor %}
-
-                                <td>
-                                    {{ insumo_formset.empty_form.producto }}
-                                </td>
-
-                                <td>
-                                    {{ insumo_formset.empty_form.dosis }}
-                                </td>
-
-                                <td>
-                                    {{ insumo_formset.empty_form.um }}
-                                </td>
-
-                                <td class="text-center">
-                                    <div class="d-none">
-                                        {{ insumo_formset.empty_form.DELETE }}
-                                    </div>
-
-                                    <button type="button" class="btn btn-outline-danger btn-sm btn-remove-row">
-                                        <i class="mdi mdi-delete"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        </template>
-                    </div>
-                </div>
-
+                <!-- BOTONES -->
                 <div class="mt-4 d-flex gap-2">
                     <button type="submit" class="btn btn-primary">
-                        {% translate "Guardar actividad" %}
+                        Guardar
                     </button>
 
-                    <a href="{% url 'vista_detalle_ciclo' id_ciclo=ciclo.id %}" class="btn btn-dark">
-                        {% translate "Cancelar" %}
+                    <a href="{% url 'vista_lista_bovinos' %}" class="btn btn-secondary">
+                        Cancelar
                     </a>
+
+                    {% if modificacion %}
+                    <button type="submit" name="borrar" class="btn btn-danger">
+                        Borrar
+                    </button>
+                    {% endif %}
                 </div>
+
             </form>
+
         </div>
     </div>
 </div>
-
-</div>
-</div>
-
 {% endblock %}
-
 {% block custom_js %}
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    const tipoSelect = document.getElementById("id_tipo");
-    const subtipoSelect = document.getElementById("id_subtipo");
-    const subtipoContainer = document.getElementById("subtipoContainer");
+    const razaSelect = document.getElementById("id_raza");
+    const subrazaSelect = document.getElementById("id_subraza");
 
-    const addBtn = document.getElementById("btnAgregarInsumo");
-    const body = document.getElementById("insumosBody");
-    const totalForms = document.getElementById("id_insumos-TOTAL_FORMS");
-    const templateElement = document.getElementById("empty-form-template");
+    if (!razaSelect || !subrazaSelect) return;
 
-    let productosActuales = [];
+    const selectedSubrazaId = subrazaSelect.value;
 
-    function crearOpcionVacia(texto = "---------") {
+    function resetSubraza(placeholder = "---------") {
+        subrazaSelect.innerHTML = "";
         const option = document.createElement("option");
         option.value = "";
-        option.textContent = texto;
-        return option;
+        option.textContent = placeholder;
+        subrazaSelect.appendChild(option);
     }
 
-    function obtenerSelectsProducto() {
-        return body.querySelectorAll('select[name$="-producto"]');
-    }
-
-    function limpiarSubtipos() {
-        if (!subtipoSelect) return;
-
-        subtipoSelect.innerHTML = "";
-        subtipoSelect.appendChild(crearOpcionVacia());
-    }
-
-    function ocultarSubtipo() {
-        if (!subtipoContainer) return;
-
-        limpiarSubtipos();
-        subtipoContainer.style.display = "none";
-    }
-
-    function limpiarProductos() {
-        productosActuales = [];
-
-        const selectsProducto = obtenerSelectsProducto();
-
-        selectsProducto.forEach(function (select) {
-            select.innerHTML = "";
-            select.appendChild(crearOpcionVacia());
-        });
-    }
-
-    function actualizarSelectsProducto(productos) {
-        productosActuales = productos || [];
-
-        const selectsProducto = obtenerSelectsProducto();
-
-        selectsProducto.forEach(function (select) {
-            const valorActual = select.value;
-
-            select.innerHTML = "";
-            select.appendChild(crearOpcionVacia());
-
-            productosActuales.forEach(function (producto) {
-                const option = document.createElement("option");
-                option.value = producto.id;
-                option.textContent = producto.nombre;
-                select.appendChild(option);
-            });
-
-            if (valorActual && productosActuales.some(p => String(p.id) === String(valorActual))) {
-                select.value = valorActual;
-            }
-        });
-    }
-
-    function cargarProductos(tipoId, subtipoId = "") {
-        if (!tipoId) {
-            limpiarProductos();
+    function cargarSubrazas(razaId, selectedId = "") {
+        if (!razaId) {
+            resetSubraza();
             return;
         }
 
-        const url = new URL("{% url 'ajax_productos_por_actividad' %}", window.location.origin);
-        url.searchParams.append("tipo_id", tipoId);
-
-        if (subtipoId) {
-            url.searchParams.append("subtipo_id", subtipoId);
-        }
-
-        fetch(url)
+        fetch(`{% url 'ajax_subrazas_por_raza' %}?raza_id=${razaId}`)
             .then(function (response) {
                 return response.json();
             })
             .then(function (data) {
-                if (!data.ok) {
-                    limpiarProductos();
+                resetSubraza();
+
+                if (!data.ok || !Array.isArray(data.subrazas)) {
                     return;
                 }
 
-                actualizarSelectsProducto(data.productos);
-            })
-            .catch(function (error) {
-                console.error("Error al cargar productos:", error);
-                limpiarProductos();
-            });
-    }
-
-    function cargarSubtipos(tipoId) {
-        if (!tipoId) {
-            ocultarSubtipo();
-            limpiarProductos();
-            return;
-        }
-
-        fetch("{% url 'ajax_subtipos_tipo_actividad' %}?tipo_id=" + tipoId)
-            .then(function (response) {
-                return response.json();
-            })
-            .then(function (data) {
-                limpiarSubtipos();
-
-                if (!data.ok || data.subtipos.length === 0) {
-                    subtipoContainer.style.display = "none";
-                    cargarProductos(tipoId, "");
-                    return;
-                }
-
-                data.subtipos.forEach(function (subtipo) {
+                data.subrazas.forEach(function (subraza) {
                     const option = document.createElement("option");
-                    option.value = subtipo.id;
-                    option.textContent = subtipo.nombre;
-                    subtipoSelect.appendChild(option);
+                    option.value = subraza.id;
+                    option.textContent = subraza.nombre;
+
+                    if (selectedId && String(selectedId) === String(subraza.id)) {
+                        option.selected = true;
+                    }
+
+                    subrazaSelect.appendChild(option);
                 });
-
-                subtipoContainer.style.display = "block";
-
-                cargarProductos(tipoId, subtipoSelect.value);
             })
             .catch(function (error) {
-                console.error("Error al cargar subtipos:", error);
-                ocultarSubtipo();
-                limpiarProductos();
+                console.error("Error al cargar subrazas:", error);
+                resetSubraza();
             });
     }
 
-    if (tipoSelect) {
-        tipoSelect.addEventListener("change", function () {
-            cargarSubtipos(this.value);
-        });
+    razaSelect.addEventListener("change", function () {
+        cargarSubrazas(this.value);
+    });
 
-        if (tipoSelect.value) {
-            cargarSubtipos(tipoSelect.value);
-        } else {
-            ocultarSubtipo();
-            limpiarProductos();
-        }
-    }
-
-    if (subtipoSelect) {
-        subtipoSelect.addEventListener("change", function () {
-            const tipoId = tipoSelect ? tipoSelect.value : "";
-            cargarProductos(tipoId, this.value);
-        });
-    }
-
-    if (addBtn && body && totalForms && templateElement) {
-        addBtn.addEventListener("click", function () {
-            const index = parseInt(totalForms.value, 10);
-            const html = templateElement.innerHTML.replace(/__prefix__/g, index);
-
-            body.insertAdjacentHTML("beforeend", html);
-            totalForms.value = index + 1;
-
-            actualizarSelectsProducto(productosActuales);
-        });
-
-        body.addEventListener("click", function (event) {
-            const btn = event.target.closest(".btn-remove-row");
-            if (!btn) return;
-
-            const row = btn.closest(".insumo-row");
-            if (!row) return;
-
-            const deleteInput = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
-
-            if (deleteInput) {
-                deleteInput.checked = true;
-                row.style.display = "none";
-            } else {
-                row.remove();
-            }
-        });
+    if (razaSelect.value) {
+        cargarSubrazas(razaSelect.value, selectedSubrazaId);
+    } else {
+        resetSubraza();
     }
 });
 </script>

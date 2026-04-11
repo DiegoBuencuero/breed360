@@ -6,28 +6,29 @@ from django.contrib import messages
 from .forms import LoginForm
 
 
+def get_empresa(request):
+    return request.user.profile.empresa
+
+
 def login_page(request):
     if request.user.is_authenticated:
-        return redirect('/')
+        return redirect("/")
 
-    if request.method == 'GET':
+    if request.method == "GET":
         form = LoginForm()
-        return render(request, 'login.html', {'form': form})
+        return render(request, "login.html", {"form": form})
 
     form = LoginForm(request.POST)
     if form.is_valid():
-        username = form.cleaned_data['username']
-        password = form.cleaned_data['password']
+        username = form.cleaned_data["username"]
+        password = form.cleaned_data["password"]
         user = authenticate(request, username=username, password=password)
 
         if user:
             login(request, user)
-            return redirect('/')
+            return redirect("/")
 
-    messages.error(request, _('Usuario o contraseña incorrectos'))
-    return render(request, 'login.html', {'form': form})
+    messages.error(request, _("Usuario o contraseña incorrectos"))
+    return render(request, "login.html", {"form": form})
 
 
-
-def index(request):
-    return render(request, "index.html")

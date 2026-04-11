@@ -1,0 +1,93 @@
+{% load static %}
+{% load i18n %}
+
+<div class="row g-3">
+
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="mb-3">{% translate "Mediciones" %}</h5>
+
+                <div class="table-responsive">
+                    <table class="table tabla-detalle align-middle">
+                        <thead>
+                            <tr>
+                                <th>{% translate "Fecha" %}</th>
+                                <th>{% translate "Tipo" %}</th>
+                                <th>{% translate "Peso" %}</th>
+                                <th>{% translate "CE" %}</th>
+                                <th>{% translate "Peso Ecog." %}</th>
+                                <th>{% translate "GIM" %}</th>
+                                <th>{% translate "AOB" %}</th>
+                                <th>{% translate "GD" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for m in mediciones %}
+                            <tr>
+                                <td>{{ m.fecha|date:"d/m/Y" }}</td>
+                                <td>{{ m.tipo_medicion }}</td>
+                                <td>{{ m.peso|default:"-" }}</td>
+                                <td>{{ m.circunferencia_escrotal|default:"-" }}</td>
+                                <td>{{ m.peso_ecografia|default:"-" }}</td>
+                                <td>{{ m.gim|default:"-" }}</td>
+                                <td>{{ m.aob|default:"-" }}</td>
+                                <td>{{ m.gd|default:"-" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-4">
+                                    {% translate "No hay registros de mediciones." %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="mb-3">{% translate "Evolución de peso" %}</h5>
+                <canvas id="pesoChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const fechas = [
+        {% for m in mediciones %}
+            {% if m.peso %}"{{ m.fecha|date:'d/m/Y' }}",{% endif %}
+        {% endfor %}
+    ];
+
+    const pesos = [
+        {% for m in mediciones %}
+            {% if m.peso %}{{ m.peso }},{% endif %}
+        {% endfor %}
+    ];
+
+    const ctx = document.getElementById('pesoChart');
+
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: fechas,
+                datasets: [{
+                    label: 'Peso (kg)',
+                    data: pesos,
+                    borderWidth: 2,
+                    tension: 0.3
+                }]
+            }
+        });
+    }
+</script>

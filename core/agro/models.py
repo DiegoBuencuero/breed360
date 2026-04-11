@@ -50,16 +50,16 @@ class Moneda(models.Model):
     nombre = models.CharField(max_length=50)
     corto = models.CharField(max_length=3)
 
-class Cotizacion(models.Model):
-    empresa = models.ForeignKey("Empresa", on_delete=models.CASCADE, null=True, blank=True)
-    moneda = models.ForeignKey(Moneda, on_delete=models.CASCADE)
-    fecha = models.DateTimeField()
-    cotizacion = models.DecimalField(max_digits=12, decimal_places=3)
+# class Cotizacion(models.Model):
+#     empresa = models.ForeignKey("Empresa", on_delete=models.CASCADE, null=True, blank=True)
+#     moneda = models.ForeignKey(Moneda, on_delete=models.CASCADE)
+#     fecha = models.DateTimeField()
+#     cotizacion = models.DecimalField(max_digits=12, decimal_places=3)
 
-class Cotizacion_general(models.Model):
-    moneda = models.ForeignKey(Moneda, on_delete=models.CASCADE)
-    fecha = models.DateTimeField()
-    cotizacion = models.DecimalField(max_digits=12, decimal_places=3)
+# class Cotizacion_general(models.Model):
+#     moneda = models.ForeignKey(Moneda, on_delete=models.CASCADE)
+#     fecha = models.DateTimeField()
+#     cotizacion = models.DecimalField(max_digits=12, decimal_places=3)
 
 class Tipodoc(models.Model):
     def __str__(self):
@@ -102,14 +102,14 @@ class Ciudad(models.Model):
     def __str__(self):
         return f"{self.nombre} ({self.provincia})"
 
-class Lista_de_precios(models.Model):
-    nombre = models.CharField(max_length=100)
-    def __str__(self):
-        return self.nombre
+# class Lista_de_precios(models.Model):
+#     nombre = models.CharField(max_length=100)
+#     def __str__(self):
+#         return self.nombre
 
-    class Meta:
-        verbose_name = "Lista de precios"
-        verbose_name_plural = "Listas de precios"
+#     class Meta:
+#         verbose_name = "Lista de precios"
+#         verbose_name_plural = "Listas de precios"
 
 class Empresa(models.Model):
     def __str__(self):
@@ -123,7 +123,7 @@ class Empresa(models.Model):
     add_date = models.DateTimeField(default=timezone.now)
     moneda = models.ForeignKey(Moneda, on_delete=models.CASCADE)
     unidad_default = models.ForeignKey("Unidad", on_delete=models.PROTECT, related_name="empresas", null=True, blank=True)
-    lista_precio = models.ForeignKey(Lista_de_precios, on_delete=models.CASCADE, related_name="lista_de_precios", null=True, blank=True)
+    # lista_precio = models.ForeignKey(Lista_de_precios, on_delete=models.CASCADE, related_name="lista_de_precios", null=True, blank=True)
 
 
 class Unidad(models.Model):

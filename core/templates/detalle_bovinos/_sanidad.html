@@ -1,0 +1,75 @@
+{% load static %}
+{% load i18n %}
+
+<div class="card">
+    <div class="card-body">
+        <h5 class="mb-3">{% translate "Sanidad" %}</h5>
+
+        <div class="table-responsive">
+            <table class="table tabla-detalle align-middle">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Tipo</th>
+                        <th>Evento</th>
+                        <th>Producto</th>
+                        <th>Dosis</th>
+                        <th>Lote</th>
+                        <th>Próx. refuerzo</th>
+                        <th>Estado</th>
+                        <th>Obs.</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in sanitarios %}
+                    <tr>
+                        <td>{{ s.fecha|date:"d/m/Y" }}</td>
+
+                        <td>
+                            <span class="badge 
+                                {% if s.tipo_evento == "VACUNA" %}bg-success
+                                {% else %}bg-warning{% endif %}">
+                                {{ s.tipo_evento }}
+                            </span>
+                        </td>
+
+                        <td class="fw-bold">{{ s.nombre }}</td>
+                        <td>{{ s.producto|default:"-" }}</td>
+                        <td>{{ s.dosis|default:"-" }}</td>
+                        <td>{{ s.lote|default:"-" }}</td>
+
+                        <td>
+                            {% if s.fecha_refuerzo %}
+                                {{ s.fecha_refuerzo|date:"d/m/Y" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if s.fecha_refuerzo %}
+                                {% if s.fecha_refuerzo < today %}
+                                    <span class="badge bg-danger">Vencida</span>
+                                {% else %}
+                                    <span class="badge bg-success">Vigente</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge bg-secondary">N/A</span>
+                            {% endif %}
+                        </td>
+
+                        <td>{{ s.observaciones|default:"-" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center text-muted py-4">
+                            Sin registros sanitarios
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</div>

@@ -1,0 +1,10 @@
+{% load static %}
+{% load i18n %}
+<div class="card">
+    <div class="card-body">
+        <h5 class="mb-3">{% translate "Datos generales y observaciones" %}</h5>
+        <div class="bloque-suave">
+            {{ bovino.observaciones|default:"Sin observaciones registradas." }}
+        </div>
+    </div>
+</div>
