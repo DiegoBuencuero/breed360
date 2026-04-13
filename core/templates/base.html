@@ -7,7 +7,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-    <title>{% block title %}AgroInnova{% endblock %}</title>
+    <title>{% block title %}InnoBreed{% endblock %}</title>
 
     <!-- plugins:css -->
     <link rel="stylesheet" href="{% static 'vendors/feather/feather.css' %}">
@@ -34,7 +34,7 @@
 
     <!-- endinject -->
 
-    <link rel="shortcut icon" href="{% static 'images/logo_chico.png' %}" />
+    <link rel="shortcut icon" style="height:32px;" href="{% static 'images/logo-chico.png' %}" />
 <style>
 .navbar.default-layout {
   display: flex;
@@ -72,6 +72,15 @@
         position: relative;
     }
 }
+.navbar .brand-logo img {
+    height: 55px;   /* ajusta este valor */
+    width: auto;
+}
+
+.navbar .brand-logo-mini img {
+    height: 40px;   /* versión pequeña */
+    width: auto;
+}
 
 </style>
 </head>
@@ -79,17 +88,14 @@
     <div class="container-scroller">
       <nav class="navbar default-layout col-lg-12 col-12 p-0 fixed-top d-flex align-items-center flex-row bg-white">
         <div class="text-center navbar-brand-wrapper d-flex align-items-center justify-content-start">
-          <div class="me-3">
-            <button class="navbar-toggler navbar-toggler align-self-center" type="button" data-bs-toggle="minimize">
+          <div class="me-0">
+            {% comment %} <button class="navbar-toggler navbar-toggler align-self-center" type="button" data-bs-toggle="minimize">
               <span class="icon-menu"></span>
-            </button>
+            </button> {% endcomment %}
           </div>
           <div>
-            <a class="navbar-brand brand-logo" href="{% url 'index' %}">
-              <img src="{% static 'images/agroinnova.png' %}" alt="logo" />
-            </a>
-            <a class="navbar-brand brand-logo-mini" href="index.html">
-              <img src="{% static 'images/agroinnova.png' %}" alt="logo" />
+            <a class="navbar-brand brand-logo ms-0" href="{% url 'index' %}" target="_self">
+                <img src="{% static 'images/logo.png' %}" alt="logo" style="height:56px;" />
             </a>
           </div>
         </div>
