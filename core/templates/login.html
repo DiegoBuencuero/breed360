@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 {% load static %}
+
 <html lang="es">
 <head>
     <meta charset="utf-8">
-    <title>AgroInnova | Login</title>
+
+    <title>{% block title %}InnoBreed{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="shortcut icon" style="height:32px;" href="{% static 'images/logo-chico.png' %}" />
 
     <!-- Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -12,7 +15,7 @@
     <!-- Icons -->
     <link rel="stylesheet" href="{% static 'vendors/ti-icons/css/themify-icons.css' %}">
 
-    <link rel="shortcut icon" href="{% static 'images/favicon.png' %}">
+    <link rel="shortcut icon" style="height:32px;" href="{% static 'images/logo-chico.png' %}" />
 
     <style>
         body {
@@ -39,7 +42,7 @@
         }
 
         .logo img {
-            max-width: 180px;
+            max-width: 250px;
         }
 
         h4 {
@@ -88,6 +91,9 @@
             border-radius: 8px;
             margin-bottom: 20px;
         }
+
+}
+
     </style>
 </head>
 
@@ -96,7 +102,7 @@
 <div class="login-card">
 
     <div class="logo">
-        <img src="{% static 'images/logo.png' %}" alt="AgroInnova">
+        <img src="{% static 'images/logo.png' %}" alt="AgroInnova" style="height:70px   width: auto;">
     </div>
 
     {% if messages %}
