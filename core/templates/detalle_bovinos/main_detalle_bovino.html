@@ -74,35 +74,12 @@
         margin-bottom: 0.75rem;
     }
 
-    .icon-verde {
-        background: rgba(46, 125, 50, 0.12);
-        color: #2e7d32;
-    }
-
-    .icon-azul {
-        background: rgba(25, 118, 210, 0.12);
-        color: #1976d2;
-    }
-
-    .icon-naranja {
-        background: rgba(245, 124, 0, 0.12);
-        color: #f57c00;
-    }
-
-    .icon-violeta {
-        background: rgba(123, 31, 162, 0.12);
-        color: #7b1fa2;
-    }
-
-    .icon-rojo {
-        background: rgba(198, 40, 40, 0.12);
-        color: #c62828;
-    }
-
-    .icon-agua {
-        background: rgba(0, 121, 107, 0.12);
-        color: #00796b;
-    }
+    .icon-verde  { background: rgba(46,125,50,0.12);   color: #2e7d32; }
+    .icon-azul   { background: rgba(25,118,210,0.12);  color: #1976d2; }
+    .icon-naranja{ background: rgba(245,124,0,0.12);   color: #f57c00; }
+    .icon-violeta{ background: rgba(123,31,162,0.12);  color: #7b1fa2; }
+    .icon-rojo   { background: rgba(198,40,40,0.12);   color: #c62828; }
+    .icon-agua   { background: rgba(0,121,107,0.12);   color: #00796b; }
 
     .card-resumen-bovino {
         border-radius: 12px;
@@ -142,9 +119,7 @@
         border-color: #1f4d2b;
     }
 
-    .nav-pills .nav-link:hover:not(.active) {
-        background: #f9fafb;
-    }
+    .nav-pills .nav-link:hover:not(.active) { background: #f9fafb; }
 
     .tabla-detalle thead th {
         background: #f9fafb;
@@ -155,9 +130,7 @@
         white-space: nowrap;
     }
 
-    .tabla-detalle td {
-        vertical-align: middle;
-    }
+    .tabla-detalle td { vertical-align: middle; }
 
     .bloque-suave {
         background: #f9fafb;
@@ -166,17 +139,8 @@
         padding: 1rem;
     }
 
-    .mini-label {
-        font-size: 0.82rem;
-        color: #6b7280;
-        margin-bottom: 0.15rem;
-    }
-
-    .mini-valor {
-        font-size: 1rem;
-        font-weight: 600;
-        color: #111827;
-    }
+    .mini-label { font-size: 0.82rem; color: #6b7280; margin-bottom: 0.15rem; }
+    .mini-valor { font-size: 1rem; font-weight: 600; color: #111827; }
 </style>
 {% endblock %}
 
@@ -209,34 +173,25 @@
                     {% translate "Detalle de Bovino" %}
                 </h3>
                 <div class="small text-muted">
-                    {{ bovino.numero_interno }} · {{ bovino.establecimiento_actual }}
+                    {{ bovino.tatuaje|default:"-" }} · {{ bovino.establecimiento }}
                 </div>
             </div>
 
             <div class="d-flex gap-2 flex-wrap">
                 <a href="{% url 'vista_lista_bovinos' %}" class="btn btn-outline-secondary">
-                    <i class="mdi mdi-arrow-left me-1"></i>
-                    {% translate "Volver" %}
+                    <i class="mdi mdi-arrow-left me-1"></i>{% translate "Volver" %}
                 </a>
-
                 <a href="{% url 'vista_editar_bovino' bovino.id %}" class="btn btn-outline-primary">
-                    <i class="mdi mdi-pencil-outline me-1"></i>
-                    {% translate "Editar" %}
+                    <i class="mdi mdi-pencil-outline me-1"></i>{% translate "Editar" %}
                 </a>
-
                 <a href="#" class="btn btn-outline-success">
-                    <i class="mdi mdi-scale-balance me-1"></i>
-                    {% translate "+ Medición" %}
+                    <i class="mdi mdi-scale-balance me-1"></i>{% translate "+ Medición" %}
                 </a>
-
                 <a href="#" class="btn btn-outline-dark">
-                    <i class="mdi mdi-medical-bag me-1"></i>
-                    {% translate "+ Sanidad" %}
+                    <i class="mdi mdi-medical-bag me-1"></i>{% translate "+ Sanidad" %}
                 </a>
-
                 <a href="#" class="btn btn-success">
-                    <i class="mdi mdi-silo-outline me-1"></i>
-                    {% translate "+ Alimentación" %}
+                    <i class="mdi mdi-silo-outline me-1"></i>{% translate "+ Alimentación" %}
                 </a>
             </div>
         </div>
@@ -248,7 +203,7 @@
                     <div class="col-lg-3">
                         <div class="foto-bovino-box">
                             {% if bovino.foto %}
-                                <img src="{{ bovino.foto.url }}" alt="{{ bovino.nombre_apodo|default:bovino.numero_interno }}">
+                                <img src="{{ bovino.foto.url }}" alt="{{ bovino.nombre_apodo|default:bovino.tatuaje }}">
                             {% else %}
                                 <div class="foto-placeholder">
                                     <i class="mdi mdi-image-off-outline fs-2 d-block text-center mb-2"></i>
@@ -262,14 +217,14 @@
                         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
                             <div>
                                 <div class="text-uppercase small text-muted fw-bold mb-1">
-                                    {{ bovino.raza }}{% if bovino.subtipo %} · {{ bovino.subtipo }}{% endif %}
+                                    {{ bovino.raza|default:"-" }}{% if bovino.subraza %} · {{ bovino.subraza }}{% endif %}
                                 </div>
                                 <div class="bovino-titulo-principal">
                                     {{ bovino.nombre_apodo|default:"Sin apodo" }}
                                 </div>
                                 <div class="bovino-subtitulo">
                                     <i class="mdi mdi-map-marker-outline me-1"></i>
-                                    {{ bovino.establecimiento_actual }}
+                                    {{ bovino.establecimiento }}
                                 </div>
                             </div>
 
@@ -290,28 +245,25 @@
                             <div class="col-md-3">
                                 <div class="bloque-suave">
                                     <div class="mini-label">{% translate "Número interno" %}</div>
-                                    <div class="mini-valor">{{ bovino.numero_interno }}</div>
+                                    <div class="mini-valor">{{ bovino.tatuaje|default:"-" }}</div>
                                 </div>
                             </div>
-
                             <div class="col-md-3">
                                 <div class="bloque-suave">
                                     <div class="mini-label">{% translate "Sexo" %}</div>
                                     <div class="mini-valor">{{ bovino.get_sexo_display }}</div>
                                 </div>
                             </div>
-
                             <div class="col-md-3">
                                 <div class="bloque-suave">
                                     <div class="mini-label">{% translate "Categoría" %}</div>
-                                    <div class="mini-valor">{{ bovino.categoria_actual }}</div>
+                                    <div class="mini-valor">{{ bovino.categoria_actual|default:"-" }}</div>
                                 </div>
                             </div>
-
                             <div class="col-md-3">
                                 <div class="bloque-suave">
                                     <div class="mini-label">{% translate "Destino" %}</div>
-                                    <div class="mini-valor">{{ bovino.destino_productivo_actual }}</div>
+                                    <div class="mini-valor">{{ bovino.destino_productivo|default:"-" }}</div>
                                 </div>
                             </div>
                         </div>
@@ -322,119 +274,71 @@
         </div>
 
         <div class="row g-3 mb-4">
-            <div class="col-6 col-md-4 col-xl-2">
+            <div class="col-6 col-md-4 col-xl">
                 <div class="card-resumen-bovino">
-                    <div class="detalle-icon-box icon-verde">
-                        <i class="mdi mdi-calendar-cake"></i>
-                    </div>
+                    <div class="detalle-icon-box icon-verde"><i class="mdi mdi-calendar-cake"></i></div>
                     <div class="titulo">{% translate "Nacimiento" %}</div>
                     <div class="valor">{{ bovino.fecha_nacimiento|date:"d/m/Y" }}</div>
+                    {% if bovino.edad_display %}
+                    <div class="text-muted" style="font-size:1rem;margin-top:0.2rem;"> {{ bovino.edad_display }}</div>
+                    {% endif %}
                 </div>
             </div>
-
-            <div class="col-6 col-md-4 col-xl-2">
+            <div class="col-6 col-md-4 col-xl">
                 <div class="card-resumen-bovino">
-                    <div class="detalle-icon-box icon-azul">
-                        <i class="mdi mdi-tag-outline"></i>
-                    </div>
+                    <div class="detalle-icon-box icon-azul"><i class="mdi mdi-tag-outline"></i></div>
                     <div class="titulo">{% translate "C. SENASA" %}</div>
                     <div class="valor">{{ bovino.caravana_senasa|default:"-" }}</div>
                 </div>
             </div>
-
-            <div class="col-6 col-md-4 col-xl-2">
+            <div class="col-6 col-md-4 col-xl">
                 <div class="card-resumen-bovino">
-                    <div class="detalle-icon-box icon-naranja">
-                        <i class="mdi mdi-identifier"></i>
-                    </div>
+                    <div class="detalle-icon-box icon-naranja"><i class="mdi mdi-identifier"></i></div>
                     <div class="titulo">{% translate "Tatuaje" %}</div>
                     <div class="valor">{{ bovino.tatuaje|default:"-" }}</div>
                 </div>
             </div>
-
-            <div class="col-6 col-md-4 col-xl-2">
+            <div class="col-6 col-md-4 col-xl">
                 <div class="card-resumen-bovino">
-                    <div class="detalle-icon-box icon-violeta">
-                        <i class="mdi mdi-scale-balance"></i>
-                    </div>
+                    <div class="detalle-icon-box icon-violeta"><i class="mdi mdi-scale-balance"></i></div>
                     <div class="titulo">{% translate "Últ. medición" %}</div>
                     <div class="valor">
-                        {% if ultima_medicion %}
-                            {{ ultima_medicion.valor }} {{ ultima_medicion.unidad|default:"" }}
-                        {% else %}
-                            -
-                        {% endif %}
+                        {% if bovino.ultimo_peso %}{{ bovino.ultimo_peso }} kg{% else %}-{% endif %}
                     </div>
                 </div>
             </div>
-
-            <div class="col-6 col-md-4 col-xl-2">
+            <div class="col-6 col-md-4 col-xl">
                 <div class="card-resumen-bovino">
-                    <div class="detalle-icon-box icon-rojo">
-                        <i class="mdi mdi-medical-bag"></i>
-                    </div>
+                    <div class="detalle-icon-box icon-rojo"><i class="mdi mdi-medical-bag"></i></div>
                     <div class="titulo">{% translate "Sanidad" %}</div>
                     <div class="valor">{{ sanitarios|length }}</div>
                 </div>
             </div>
-
-            <div class="col-6 col-md-4 col-xl-2">
+            <div class="col-6 col-md-4 col-xl">
                 <div class="card-resumen-bovino">
-                    <div class="detalle-icon-box icon-agua">
-                        <i class="mdi mdi-silo-outline"></i>
-                    </div>
+                    <div class="detalle-icon-box icon-agua"><i class="mdi mdi-silo-outline"></i></div>
                     <div class="titulo">{% translate "Alimentación" %}</div>
-                    <div class="valor">{{ alimentacion|length }}</div>
+                    <div class="valor">0</div>
                 </div>
             </div>
         </div>
 
         <ul class="nav nav-pills mb-4" id="animalTab" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="resumen-tab" data-bs-toggle="pill" data-bs-target="#resumen" type="button">{% translate "Resumen" %}</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="genealogia-tab" data-bs-toggle="pill" data-bs-target="#genealogia" type="button">{% translate "Genealogía" %}</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="mediciones-tab" data-bs-toggle="pill" data-bs-target="#mediciones" type="button">{% translate "Mediciones" %}</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="sanidad-tab" data-bs-toggle="pill" data-bs-target="#sanidad" type="button">{% translate "Sanidad" %}</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="alimentacion-tab" data-bs-toggle="pill" data-bs-target="#alimentacion" type="button">{% translate "Alimentación" %}</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="breedplan-tab" data-bs-toggle="pill" data-bs-target="#breedplan" type="button">{% translate "Breedplan" %}</button>
-            </li>
+            <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#resumen"     type="button">{% translate "Resumen" %}</button></li>
+            <li class="nav-item"><button class="nav-link"        data-bs-toggle="pill" data-bs-target="#genealogia"  type="button">{% translate "Genealogía" %}</button></li>
+            <li class="nav-item"><button class="nav-link"        data-bs-toggle="pill" data-bs-target="#mediciones"  type="button">{% translate "Mediciones" %}</button></li>
+            <li class="nav-item"><button class="nav-link"        data-bs-toggle="pill" data-bs-target="#sanidad"     type="button">{% translate "Sanidad" %}</button></li>
+            <li class="nav-item"><button class="nav-link"        data-bs-toggle="pill" data-bs-target="#alimentacion"type="button">{% translate "Alimentación" %}</button></li>
+            <li class="nav-item"><button class="nav-link"        data-bs-toggle="pill" data-bs-target="#breedplan"   type="button">{% translate "Breedplan" %}</button></li>
         </ul>
 
         <div class="tab-content" id="animalTabContent">
-
-            <div class="tab-pane fade show active" id="resumen" role="tabpanel">
-                {% include "detalle_bovinos/_resumen.html" %}
-            </div>
-
-            <div class="tab-pane fade" id="genealogia" role="tabpanel">
-                {% include "detalle_bovinos/_genealogia.html" %}
-            </div>
-
-            <div class="tab-pane fade" id="mediciones" role="tabpanel">
-                {% include "detalle_bovinos/_medicion.html" %}
-            </div>
-
-            <div class="tab-pane fade" id="sanidad" role="tabpanel">
-                {% include "detalle_bovinos/_sanidad.html" %}
-            </div>
-
-            <div class="tab-pane fade" id="alimentacion" role="tabpanel">
-                {% include "detalle_bovinos/_alimentacion.html" %}
-            </div>
-            <div class="tab-pane fade" id="breedplan" role="tabpanel">
-                {% include "detalle_bovinos/_breedplan.html" %}
-            </div>
-
+            <div class="tab-pane fade show active" id="resumen"     role="tabpanel">{% include "detalle_bovinos/_resumen.html" %}</div>
+            <div class="tab-pane fade"             id="genealogia"  role="tabpanel">{% include "detalle_bovinos/_genealogia.html" %}</div>
+            <div class="tab-pane fade"             id="mediciones"  role="tabpanel">{% include "detalle_bovinos/_medicion.html" %}</div>
+            <div class="tab-pane fade"             id="sanidad"     role="tabpanel">{% include "detalle_bovinos/_sanidad.html" %}</div>
+            <div class="tab-pane fade"             id="alimentacion"role="tabpanel">{% include "detalle_bovinos/_alimentacion.html" %}</div>
+            <div class="tab-pane fade"             id="breedplan"   role="tabpanel">{% include "detalle_bovinos/_breedplan.html" %}</div>
         </div>
 
     </div>

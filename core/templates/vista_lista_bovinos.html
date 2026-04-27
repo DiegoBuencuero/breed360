@@ -95,13 +95,12 @@
                                     <tr>
                                         <th>{% translate "N° interno" %}</th>
                                         <th>{% translate "Caravana" %}</th>
-                                        <th>{% translate "Tatuaje" %}</th>
-                                        <th>{% translate "Apodo" %}</th>
                                         <th>{% translate "Sexo" %}</th>
                                         <th>{% translate "Establecimiento" %}</th>
                                         <th>{% translate "Raza" %}</th>
                                         <th>{% translate "Categoría" %}</th>
                                         <th>{% translate "Destino" %}</th>
+                                        <th>{% translate "Apodo" %}</th>
                                         <th>{% translate "Estado" %}</th>
                                         <th class="text-center">{% translate "Acciones" %}</th>
                                     </tr>
@@ -109,15 +108,14 @@
                                 <tbody>
                                     {% for bovino in bovinos %}
                                     <tr>
-                                        <td>{{ bovino.numero_interno }}</td>
-                                        <td>{{ bovino.caravana_senasa|default:"-" }}</td>
                                         <td>{{ bovino.tatuaje|default:"-" }}</td>
-                                        <td>{{ bovino.nombre_apodo|default:"-" }}</td>
+                                        <td>{{ bovino.caravana_senasa|default:"-" }}</td>
                                         <td>{{ bovino.get_sexo_display }}</td>
-                                        <td>{{ bovino.establecimiento_actual|default:"-" }}</td>
-                                        <td>{{ bovino.raza }}</td>
-                                        <td>{{ bovino.categoria_actual }}</td>
-                                        <td>{{ bovino.destino_productivo_actual }}</td>
+                                        <td>{{ bovino.establecimiento|default:"-" }}</td>
+                                        <td>{{ bovino.raza|default:"-" }}</td>
+                                        <td>{{ bovino.categoria_actual|default:"-" }}</td>
+                                        <td>{{ bovino.destino_productivo|default:"-" }}</td>
+                                        <td>{{ bovino.nombre_apodo|default:"-" }}</td>
                                         <td>
                                             {% if bovino.activo %}
                                                 <span class="badge-estado-activo">
@@ -144,7 +142,7 @@
                                     </tr>
                                     {% empty %}
                                     <tr>
-                                        <td colspan="11" class="text-center text-muted">
+                                        <td colspan="10" class="text-center text-muted">
                                             {% translate "No hay bovinos cargados" %}
                                         </td>
                                     </tr>

@@ -20,127 +20,151 @@
 
             <!-- HEADER -->
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h3>
-                        {% if modificacion %}
-                            Editar bovino
-                        {% else %}
-                            Crear bovino
-                        {% endif %}
-                    </h3>
+                <h3 class="mb-0">
+                    {% if modificacion %}Editar bovino{% else %}Crear bovino{% endif %}
+                </h3>
+                <div class="d-flex gap-2">
+                    <a href="#" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1">
+                        <i class="mdi mdi-file-excel"></i>
+                        Importar Excel
+                    </a>
+                    <a href="{% url 'vista_lista_bovinos' %}" class="btn btn-outline-secondary btn-sm">
+                        Volver
+                    </a>
                 </div>
-
-                <a href="{% url 'vista_lista_bovinos' %}" class="btn btn-outline-secondary">
-                    Volver
-                </a>
             </div>
 
-            <!-- FORM -->
             <form method="post">
                 {% csrf_token %}
 
-                <div class="row g-3">
+                <!-- BLOQUE: Identificación -->
+                <div class="row g-3 mb-4">
+                    <div class="col-12">
+                        <p class="text-muted small fw-semibold text-uppercase mb-1" style="letter-spacing:.05em;">Identificación</p>
+                        <hr class="mt-0 mb-3">
+                    </div>
 
                     <div class="col-md-4">
-                        <label>Rodeo</label>
+                        <label class="form-label">Rodeo <span class="text-danger">*</span></label>
                         {{ form.rodeo }}
                     </div>
 
                     <div class="col-md-4">
-                        <label>Caravana SENASA</label>
-                        {{ form.caravana_senasa }}
-                    </div>
-
-                    <div class="col-md-4">
-                        <label>Tatuaje</label>
-                        {{ form.tatuaje }}
-                    </div>
-
-                    <div class="col-md-4">
-                        <label>Nombre</label>
-                        {{ form.nombre_apodo }}
-                    </div>
-
-                    <div class="col-md-4">
-                        <label>Color</label>
-                        {{ form.color }}
-                    </div>
-
-                    <div class="col-md-4">
-                        <label>Sexo</label>
+                        <label class="form-label">Sexo <span class="text-danger">*</span></label>
                         {{ form.sexo }}
                     </div>
 
                     <div class="col-md-4">
-                        <label>Fecha nacimiento</label>
+                        <label class="form-label">Fecha de nacimiento <span class="text-danger">*</span></label>
                         {{ form.fecha_nacimiento }}
                     </div>
 
+                    {% if modificacion %}
+                    <div class="col-md-3">
+                        <label class="form-label text-muted">Tatuaje</label>
+                        <p class="form-control-plaintext fw-semibold ps-1 font-monospace">{{ object.tatuaje|default:"—" }}</p>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-muted">Caravana SENASA</label>
+                        <p class="form-control-plaintext fw-semibold ps-1 font-monospace">{{ object.caravana_senasa|default:"—" }}</p>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label text-muted">Prefijo</label>
+                        <p class="form-control-plaintext fw-semibold ps-1 font-monospace">{{ object.senasa_prefijo_animal|default:"—" }}</p>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label text-muted">Nº SENASA</label>
+                        <p class="form-control-plaintext fw-semibold ps-1 font-monospace">{{ object.senasa_numero_animal|default:"—" }}</p>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label text-muted">Nº nacimiento</label>
+                        <p class="form-control-plaintext fw-semibold ps-1">{{ object.numero_nacimiento|default:"—" }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- BLOQUE: Datos generales -->
+                <div class="row g-3 mb-4">
+                    <div class="col-12">
+                        <p class="text-muted small fw-semibold text-uppercase mb-1" style="letter-spacing:.05em;">Datos generales</p>
+                        <hr class="mt-0 mb-3">
+                    </div>
+
                     <div class="col-md-4">
-                        <label>Raza</label>
+                        <label class="form-label">Nombre / apodo</label>
+                        {{ form.nombre_apodo }}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Color</label>
+                        {{ form.color }}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Raza</label>
                         {{ form.raza }}
                     </div>
 
                     <div class="col-md-4">
-                        <label>Subraza</label>
+                        <label class="form-label">Subraza</label>
                         {{ form.subraza }}
                     </div>
 
-                    <div class="col-md-6">
-                        <label>Madre</label>
+                    <div class="col-md-4">
+                        <label class="form-label">Madre</label>
                         {{ form.madre }}
                     </div>
 
-                    <div class="col-md-6">
-                        <label>Padre genético</label>
+                    <div class="col-md-4">
+                        <label class="form-label">Padre genético</label>
                         {{ form.padre_genetico }}
+                    </div>
+                </div>
+
+                <!-- BLOQUE: Estado -->
+                <div class="row g-3 mb-4">
+                    <div class="col-12">
+                        <p class="text-muted small fw-semibold text-uppercase mb-1" style="letter-spacing:.05em;">Estado</p>
+                        <hr class="mt-0 mb-3">
                     </div>
 
                     <div class="col-md-4">
-                        <label>Categoría</label>
+                        <label class="form-label">Categoría</label>
                         {{ form.categoria_actual }}
                     </div>
 
                     <div class="col-md-4">
-                        <label>Estado reproductivo</label>
+                        <label class="form-label">Estado reproductivo</label>
                         {{ form.estado_reproductivo }}
                     </div>
 
                     <div class="col-md-4">
-                        <label>Destino productivo</label>
+                        <label class="form-label">Destino productivo</label>
                         {{ form.destino_productivo }}
                     </div>
 
                     <div class="col-md-4">
-                        <label>Estado de vida</label>
+                        <label class="form-label">Estado de vida <span class="text-danger">*</span></label>
                         {{ form.estado_vida }}
                     </div>
-
-                    <div class="col-md-4 d-flex align-items-center">
-                        {{ form.activo }} Activo
-                    </div>
-
-                    <div class="col-12">
-                        <label>Observaciones</label>
+            
+                    <div class="col-4">
+                        <label class="form-label">Observaciones</label>
                         {{ form.observaciones }}
                     </div>
+                    
 
                 </div>
 
+                <!-- BLOQUE: Observaciones -->
+
+
                 <!-- BOTONES -->
-                <div class="mt-4 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">
-                        Guardar
-                    </button>
-
-                    <a href="{% url 'vista_lista_bovinos' %}" class="btn btn-secondary">
-                        Cancelar
-                    </a>
-
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                    <a href="{% url 'vista_lista_bovinos' %}" class="btn btn-secondary">Cancelar</a>
                     {% if modificacion %}
-                    <button type="submit" name="borrar" class="btn btn-danger">
-                        Borrar
-                    </button>
+                    <button type="submit" name="borrar" class="btn btn-danger ms-auto">Borrar</button>
                     {% endif %}
                 </div>
 
@@ -150,6 +174,7 @@
     </div>
 </div>
 {% endblock %}
+
 {% block custom_js %}
 <script>
 document.addEventListener("DOMContentLoaded", function () {
@@ -169,43 +194,25 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function cargarSubrazas(razaId, selectedId = "") {
-        if (!razaId) {
-            resetSubraza();
-            return;
-        }
+        if (!razaId) { resetSubraza(); return; }
 
         fetch(`{% url 'ajax_subrazas_por_raza' %}?raza_id=${razaId}`)
-            .then(function (response) {
-                return response.json();
-            })
-            .then(function (data) {
+            .then(r => r.json())
+            .then(data => {
                 resetSubraza();
-
-                if (!data.ok || !Array.isArray(data.subrazas)) {
-                    return;
-                }
-
+                if (!data.ok || !Array.isArray(data.subrazas)) return;
                 data.subrazas.forEach(function (subraza) {
                     const option = document.createElement("option");
                     option.value = subraza.id;
                     option.textContent = subraza.nombre;
-
-                    if (selectedId && String(selectedId) === String(subraza.id)) {
-                        option.selected = true;
-                    }
-
+                    if (selectedId && String(selectedId) === String(subraza.id)) option.selected = true;
                     subrazaSelect.appendChild(option);
                 });
             })
-            .catch(function (error) {
-                console.error("Error al cargar subrazas:", error);
-                resetSubraza();
-            });
+            .catch(() => resetSubraza());
     }
 
-    razaSelect.addEventListener("change", function () {
-        cargarSubrazas(this.value);
-    });
+    razaSelect.addEventListener("change", function () { cargarSubrazas(this.value); });
 
     if (razaSelect.value) {
         cargarSubrazas(razaSelect.value, selectedSubrazaId);

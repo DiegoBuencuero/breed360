@@ -1,0 +1,536 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block plugin_css %}
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+
+  {# ============================================================ #}
+  {# Encabezado                                                   #}
+  {# ============================================================ #}
+  <div class="row">
+    <div class="col-sm-12">
+      <div class="home-tab">
+        <div class="d-sm-flex align-items-center justify-content-between border-bottom pb-3">
+          <div>
+            <h4 class="mb-1">{{ grupo.nombre }}</h4>
+            <p class="text-muted mb-0">
+              {{ grupo.get_tipo_servicio_display }}
+              — {{ grupo.establecimiento.nombre }}
+              {% if grupo.rodeo %} — Rodeo base: {{ grupo.rodeo.nombre }}{% endif %}
+              — Padre: {{ grupo.padre_genetico.nombre }}
+              — Inicio: {{ grupo.fecha_inicio|date:"d/m/Y" }}
+            </p>
+          </div>
+          {% comment %} <div class="btn-wrapper">
+            <a href="{% url 'grupo_servicio_update' grupo.pk %}" class="btn btn-otline-dark align-items-center">
+              <i class="mdi mdi-pencil"></i> Editarccd
+            </a>
+            <a href="{% url 'dashboard' %}" class="btn btn-otline-dark">
+              <i class="icon-arrow-left"></i> Volver
+            </a> {% endcomment %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ============================================================ #}
+  {# KPIs del grupo                                                #}
+  {# ============================================================ #}
+  <div class="row mt-3">
+    <div class="col-sm-12">
+      <div class="statistics-details d-flex align-items-center justify-content-between">
+        <div>
+          <p class="statistics-title">Miembros activos</p>
+          <h3 class="rate-percentage">{{ grupo.total_activos }}</h3>
+          <p class="text-success d-flex"><i class="mdi mdi-menu-up"></i><span>en curso</span></p>
+        </div>
+        <div>
+          <p class="statistics-title">Histórico</p>
+          <h3 class="rate-percentage">{{ grupo.total_historico }}</h3>
+          <p class="text-muted d-flex"><span>ingresos totales</span></p>
+        </div>
+        <div>
+          <p class="statistics-title">Estado</p>
+          <h3 class="rate-percentage">{{ grupo.get_estado_display }}</h3>
+          <p class="text-muted d-flex"><span>{{ grupo.fecha_inicio|date:"d/m/Y" }}</span></p>
+        </div>
+        <div class="d-none d-md-block">
+          <p class="statistics-title">Fin previsto</p>
+          <h3 class="rate-percentage">{{ grupo.fecha_fin_prevista|date:"d/m/Y"|default:"—" }}</h3>
+          <p class="text-muted d-flex"><span>planificado</span></p>
+        </div>
+        <div class="d-none d-md-block">
+          <p class="statistics-title">Días posparto mín.</p>
+          <h3 class="rate-percentage">{{ grupo.dias_minimos_posparto }}</h3>
+          <p class="text-muted d-flex"><span>filtro base</span></p>
+        </div>
+        <div class="d-none d-md-block">
+          <p class="statistics-title">Peso mín. / Edad mín.</p>
+          <h3 class="rate-percentage">
+            {{ grupo.peso_minimo_kg|default:"—" }}{% if grupo.peso_minimo_kg %}kg{% endif %}
+            / {{ grupo.edad_minima_dias|default:"—" }}{% if grupo.edad_minima_dias %}d{% endif %}
+          </h3>
+          <p class="text-muted d-flex"><span>filtros</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ============================================================ #}
+  {# Listado de miembros activos                                   #}
+  {# ============================================================ #}
+  <div class="row mt-3">
+    <div class="col-12 grid-margin stretch-card">
+      <div class="card card-rounded">
+        <div class="card-body">
+
+          <div class="d-sm-flex justify-content-between align-items-start">
+            <div>
+              <h4 class="card-title card-title-dash">Miembros del grupo</h4>
+              <p class="card-subtitle card-subtitle-dash">
+                Animales actualmente asignados al servicio.
+              </p>
+            </div>
+            <div class="btn-wrapper">
+              {% if grupo.esta_abierto %}
+                {% if grupo.rodeo %}
+                <button type="button"
+                        class="btn btn-otline-dark"
+                        data-bs-toggle="modal"
+                        data-bs-target="#modalAgregarDesdeRodeo">
+                  <i class="mdi mdi-cow"></i> Agregar desde rodeo
+                </button>
+                {% endif %}
+                <button type="button"
+                        class="btn btn-primary text-white me-0"
+                        data-bs-toggle="modal"
+                        data-bs-target="#modalBuscarAnimal">
+                  <i class="mdi mdi-magnify"></i> Buscar animal
+                </button>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="table-responsive mt-3">
+            <table class="table select-table">
+              <thead>
+                <tr>
+                  <th>Animal</th>
+                  <th>Categoría</th>
+                  <th>Edad</th>
+                  <th>Último peso</th>
+                  <th>Ingreso</th>
+                  <th>Días en grupo</th>
+                  <th class="text-end">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-miembros">
+                {% for m in miembros_activos %}
+                <tr data-miembro-id="{{ m.pk }}">
+                  <td>
+                    <h6 class="mb-0">{{ m.animal.caravana_senasa|default:m.animal.tatuaje|default:"—" }}</h6>
+                    <p class="mb-0 text-muted small">{{ m.animal.rodeo.nombre }}</p>
+                  </td>
+                  <td>{{ m.animal.categoria_actual|default:"—" }}</td>
+                  <td>{{ m.animal.edad_display|default:"—" }}</td>
+                  <td>{{ m.animal.ultimo_peso|default:"—" }}{% if m.animal.ultimo_peso %} kg{% endif %}</td>
+                  <td>{{ m.fecha_ingreso|date:"d/m/Y" }}</td>
+                  <td>{{ m.dias_en_grupo }}</td>
+                  <td class="text-end">
+                    {% if grupo.esta_abierto %}
+                    <button type="button"
+                            class="btn btn-sm btn-otline-dark btn-quitar-miembro"
+                            data-miembro-id="{{ m.pk }}">
+                      <i class="mdi mdi-close"></i> Quitar
+                    </button>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="7" class="text-center text-muted py-4">
+                    Este grupo todavía no tiene miembros. Agregá animales con los botones de arriba.
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+{# ============================================================ #}
+{# MODAL 1 — Agregar desde rodeo                                 #}
+{# ============================================================ #}
+{% if grupo.rodeo and grupo.esta_abierto %}
+<div class="modal fade" id="modalAgregarDesdeRodeo" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          Agregar animales desde <strong>{{ grupo.rodeo.nombre }}</strong>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <p class="text-muted mb-0">
+            Las filas <span class="text-danger">en rojo</span> no cumplen los filtros del grupo.
+            Las podés agregar igual, se te va a pedir confirmación.
+          </p>
+          <div>
+            <span class="badge badge-opacity-primary" id="contador-seleccionados">0 seleccionados</span>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table select-table">
+            <thead>
+              <tr>
+                <th style="width: 40px;">
+                  <div class="form-check form-check-flat mt-0">
+                    <label class="form-check-label">
+                      <input type="checkbox" class="form-check-input" id="check-all-rodeo">
+                      <i class="input-helper"></i>
+                    </label>
+                  </div>
+                </th>
+                <th>Animal</th>
+                <th>Categoría</th>
+                <th>Edad</th>
+                <th>Último peso</th>
+                <th>Estado reproductivo</th>
+                <th>Motivo</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-rodeo">
+              <tr>
+                <td colspan="7" class="text-center text-muted py-4">
+                  Cargando animales del rodeo…
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-otline-dark" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary text-white" id="btn-agregar-seleccionados">
+          <i class="mdi mdi-check"></i> Agregar seleccionados
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+
+{# ============================================================ #}
+{# MODAL 2 — Buscar animal individual                            #}
+{# ============================================================ #}
+{% if grupo.esta_abierto %}
+<div class="modal fade" id="modalBuscarAnimal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Buscar animal por caravana, tatuaje o nombre</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="mb-3">
+          <input type="text"
+                 id="input-buscar-animal"
+                 class="form-control"
+                 placeholder="Ej: 2501, A001, Lola..."
+                 autocomplete="off">
+          <small class="form-text text-muted">
+            Mínimo 2 caracteres. La búsqueda se dispara automáticamente.
+          </small>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table select-table">
+            <thead>
+              <tr>
+                <th>Animal</th>
+                <th>Rodeo</th>
+                <th>Categoría</th>
+                <th>Edad</th>
+                <th class="text-end">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-buscar">
+              <tr>
+                <td colspan="5" class="text-center text-muted py-4">
+                  Escribí algo para comenzar a buscar.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-otline-dark" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+
+{% block custom_js %}
+<script>
+  // ============================================================
+  // Config global — URLs y grupo actual
+  // ============================================================
+  var GRUPO_ID    = {{ grupo.pk }};
+  var URL_ANIMALES_RODEO     = "{% url 'ajax_animales_del_rodeo_para_grupo' grupo.pk %}";
+  var URL_BUSCAR_ANIMAL      = "{% url 'ajax_buscar_animal_para_grupo' grupo.pk %}";
+  var URL_AGREGAR_MIEMBROS   = "{% url 'ajax_agregar_miembros' grupo.pk %}";
+  var URL_QUITAR_MIEMBRO     = "{% url 'ajax_quitar_miembro' grupo.pk %}";
+  var CSRF_TOKEN             = "{{ csrf_token }}";
+
+
+  $(function () {
+
+    // ============================================================
+    // MODAL 1 — Agregar desde rodeo
+    // ============================================================
+    var $modalRodeo = $("#modalAgregarDesdeRodeo");
+    var $tbodyRodeo = $("#tbody-rodeo");
+    var $contador   = $("#contador-seleccionados");
+    var $checkAll   = $("#check-all-rodeo");
+
+    // Carga los animales del rodeo al abrir el modal
+    $modalRodeo.on("shown.bs.modal", function () {
+      cargarAnimalesRodeo();
+    });
+
+    function cargarAnimalesRodeo() {
+      $tbodyRodeo.html('<tr><td colspan="7" class="text-center text-muted py-4">Cargando animales del rodeo…</td></tr>');
+
+      $.ajax({
+        url:  URL_ANIMALES_RODEO,
+        type: "GET",
+        dataType: "json",
+        success: function (data) {
+          renderAnimalesRodeo(data.animales);
+        },
+        error: function () {
+          $tbodyRodeo.html('<tr><td colspan="7" class="text-center text-danger py-4">Error al cargar animales.</td></tr>');
+        }
+      });
+    }
+
+    function renderAnimalesRodeo(animales) {
+      if (!animales || animales.length === 0) {
+        $tbodyRodeo.html('<tr><td colspan="7" class="text-center text-muted py-4">No hay animales disponibles en este rodeo.</td></tr>');
+        actualizarContador();
+        return;
+      }
+
+      var html = "";
+      $.each(animales, function (i, a) {
+        var rowClass = a.cumple_filtros ? "" : "table-danger";
+        var motivos  = a.motivos_no_cumple && a.motivos_no_cumple.length
+                       ? a.motivos_no_cumple.join(", ")
+                       : "Cumple filtros";
+
+        html += '<tr class="' + rowClass + '">';
+        html += '<td><div class="form-check form-check-flat mt-0"><label class="form-check-label">';
+        html += '<input type="checkbox" class="form-check-input chk-animal" '
+             +  'data-animal-id="' + a.id + '" '
+             +  'data-cumple="' + (a.cumple_filtros ? "1" : "0") + '">';
+        html += '<i class="input-helper"></i></label></div></td>';
+        html += '<td><h6 class="mb-0">' + (a.identificador || "—") + '</h6>'
+             +  '<p class="mb-0 text-muted small">' + (a.nombre_apodo || "") + '</p></td>';
+        html += '<td>' + (a.categoria || "—") + '</td>';
+        html += '<td>' + (a.edad_display || "—") + '</td>';
+        html += '<td>' + (a.ultimo_peso != null ? a.ultimo_peso + " kg" : "—") + '</td>';
+        html += '<td>' + (a.estado_reproductivo || "—") + '</td>';
+        html += '<td><small>' + motivos + '</small></td>';
+        html += '</tr>';
+      });
+
+      $tbodyRodeo.html(html);
+      actualizarContador();
+    }
+
+    // Check all
+    $checkAll.on("change", function () {
+      $tbodyRodeo.find(".chk-animal").prop("checked", $(this).is(":checked"));
+      actualizarContador();
+    });
+
+    // Cambio individual
+    $tbodyRodeo.on("change", ".chk-animal", function () {
+      actualizarContador();
+    });
+
+    function actualizarContador() {
+      var n = $tbodyRodeo.find(".chk-animal:checked").length;
+      $contador.text(n + " seleccionado" + (n === 1 ? "" : "s"));
+    }
+
+    // Agregar seleccionados
+    $("#btn-agregar-seleccionados").on("click", function () {
+      var $seleccionados = $tbodyRodeo.find(".chk-animal:checked");
+      if ($seleccionados.length === 0) {
+        alert("No seleccionaste ningún animal.");
+        return;
+      }
+
+      // Verificamos si alguno no cumple filtros
+      var noCumplen = $seleccionados.filter('[data-cumple="0"]').length;
+      if (noCumplen > 0) {
+        var msg = "Hay " + noCumplen + " animal(es) que NO cumplen los filtros del grupo. "
+                + "¿Querés agregarlos igual?";
+        if (!confirm(msg)) return;
+      }
+
+      var ids = $seleccionados.map(function () {
+        return $(this).data("animal-id");
+      }).get();
+
+      agregarMiembros(ids);
+    });
+
+    function agregarMiembros(ids) {
+      $.ajax({
+        url:  URL_AGREGAR_MIEMBROS,
+        type: "POST",
+        data: {
+          animal_ids: ids.join(","),
+          csrfmiddlewaretoken: CSRF_TOKEN
+        },
+        dataType: "json",
+        success: function (data) {
+          if (data.ok) {
+            alert("Se agregaron " + data.agregados + " animal(es) al grupo.");
+            location.reload();
+          } else {
+            alert("Error: " + (data.error || "no se pudo agregar."));
+          }
+        },
+        error: function () {
+          alert("Error de comunicación al agregar miembros.");
+        }
+      });
+    }
+
+
+    // ============================================================
+    // MODAL 2 — Buscar animal individual
+    // ============================================================
+    var $inputBuscar = $("#input-buscar-animal");
+    var $tbodyBuscar = $("#tbody-buscar");
+    var timerBuscar  = null;
+
+    $inputBuscar.on("input", function () {
+      var q = $(this).val().trim();
+      clearTimeout(timerBuscar);
+
+      if (q.length < 2) {
+        $tbodyBuscar.html('<tr><td colspan="5" class="text-center text-muted py-4">Escribí al menos 2 caracteres.</td></tr>');
+        return;
+      }
+
+      timerBuscar = setTimeout(function () { buscarAnimal(q); }, 300);
+    });
+
+    function buscarAnimal(q) {
+      $tbodyBuscar.html('<tr><td colspan="5" class="text-center text-muted py-4">Buscando…</td></tr>');
+
+      $.ajax({
+        url:  URL_BUSCAR_ANIMAL,
+        type: "GET",
+        data: { q: q },
+        dataType: "json",
+        success: function (data) {
+          renderResultadosBusqueda(data.animales);
+        },
+        error: function () {
+          $tbodyBuscar.html('<tr><td colspan="5" class="text-center text-danger py-4">Error en la búsqueda.</td></tr>');
+        }
+      });
+    }
+
+    function renderResultadosBusqueda(animales) {
+      if (!animales || animales.length === 0) {
+        $tbodyBuscar.html('<tr><td colspan="5" class="text-center text-muted py-4">Sin resultados.</td></tr>');
+        return;
+      }
+
+      var html = "";
+      $.each(animales, function (i, a) {
+        var accion = a.ya_es_miembro
+          ? '<span class="badge badge-opacity-success">Ya es miembro</span>'
+          : '<button type="button" class="btn btn-sm btn-primary text-white btn-agregar-uno" '
+            + 'data-animal-id="' + a.id + '"><i class="mdi mdi-plus"></i> Agregar</button>';
+
+        html += '<tr>';
+        html += '<td><h6 class="mb-0">' + (a.identificador || "—") + '</h6>'
+             +  '<p class="mb-0 text-muted small">' + (a.nombre_apodo || "") + '</p></td>';
+        html += '<td>' + (a.rodeo || "—") + '</td>';
+        html += '<td>' + (a.categoria || "—") + '</td>';
+        html += '<td>' + (a.edad_display || "—") + '</td>';
+        html += '<td class="text-end">' + accion + '</td>';
+        html += '</tr>';
+      });
+      $tbodyBuscar.html(html);
+    }
+
+    $tbodyBuscar.on("click", ".btn-agregar-uno", function () {
+      var animalId = $(this).data("animal-id");
+      agregarMiembros([animalId]);
+    });
+
+
+    // ============================================================
+    // Quitar miembro
+    // ============================================================
+    $("#tbody-miembros").on("click", ".btn-quitar-miembro", function () {
+      var miembroId = $(this).data("miembro-id");
+      if (!confirm("¿Confirmás quitar este animal del grupo?")) return;
+
+      $.ajax({
+        url:  URL_QUITAR_MIEMBRO,
+        type: "POST",
+        data: {
+          miembro_id: miembroId,
+          motivo: "CAMBIO_LOTE",
+          csrfmiddlewaretoken: CSRF_TOKEN
+        },
+        dataType: "json",
+        success: function (data) {
+          if (data.ok) {
+            location.reload();
+          } else {
+            alert("Error: " + (data.error || "no se pudo quitar."));
+          }
+        },
+        error: function () {
+          alert("Error de comunicación.");
+        }
+      });
+    });
+
+  });
+</script>
+{% endblock %}

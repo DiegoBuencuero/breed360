@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block content %}
+<div class="container-fluid">
+
+    {% if messages %}
+    <div class="mb-4">
+        {% for message in messages %}
+        <div class="alert {{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
+            <i class="mdi 
+                {% if 'success' in message.tags %}mdi-check-circle
+                {% elif 'danger' in message.tags %}mdi-alert-circle
+                {% elif 'warning' in message.tags %}mdi-alert
+                {% else %}mdi-information{% endif %}
+                me-2"></i>
+            <div>{{ message }}</div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="upload-card">
+        <div class="upload-header d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-4">
+            <div>
+                <h3 class="mb-1">
+                    <i class="mdi mdi-barn me-1"></i>
+                    {% if modificacion %}{% translate "Editar establecimiento" %}{% else %}{% translate "Crear establecimiento" %}{% endif %}
+                </h3>
+            </div>
+            <a href="{% url 'vista_lista_establecimientos' %}" class="btn btn-outline-secondary">
+                <i class="mdi mdi-arrow-left me-1"></i>
+                {% translate "Volver" %}
+            </a>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <!-- DATOS GENERALES -->
+                    <h6 class="text-muted text-uppercase fw-semibold mb-3" style="font-size:.75rem;letter-spacing:.05em;">
+                        {% translate "Datos generales" %}
+                    </h6>
+
+                    <div class="row g-3 mb-4">
+
+                        <div class="col-md-6">
+                            <label class="form-label">{% translate "Empresa" %} <span class="text-danger">*</span></label>
+                            {{ form.empresa }}
+                            {% if form.empresa.errors %}<div class="text-danger small mt-1">{{ form.empresa.errors|join:", " }}</div>{% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">{% translate "Ciudad" %} <span class="text-danger">*</span></label>
+                            {{ form.ciudad }}
+                            {% if form.ciudad.errors %}<div class="text-danger small mt-1">{{ form.ciudad.errors|join:", " }}</div>{% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">{% translate "Nombre" %} <span class="text-danger">*</span></label>
+                            {{ form.nombre }}
+                            {% if form.nombre.errors %}<div class="text-danger small mt-1">{{ form.nombre.errors|join:", " }}</div>{% endif %}
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">{% translate "Código interno" %}</label>
+                            {{ form.codigo }}
+                        </div>
+
+                        <div class="col-md-9">
+                            <label class="form-label">{% translate "Ubicación" %}</label>
+                            {{ form.ubicacion }}
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">{% translate "Observaciones" %}</label>
+                            {{ form.observaciones }}
+                        </div>
+
+                        <div class="col-12 d-flex align-items-center gap-2">
+                            {{ form.activo }}
+                            <label class="form-check-label mb-0">{% translate "Activo" %}</label>
+                        </div>
+
+                    </div>
+
+                    <hr class="my-4">
+
+                    <!-- IDENTIFICADORES -->
+                    <h6 class="text-muted text-uppercase fw-semibold mb-3" style="font-size:.75rem;letter-spacing:.05em;">
+                        {% translate "Identificadores" %}
+                    </h6>
+
+                    <div class="row g-3 mb-4">
+
+                        <!-- SENASA -->
+                        <div class="col-12">
+                            <label class="form-label">
+                                {% translate "SENASA" %}
+                                <span class="badge bg-danger ms-1" style="font-size:.7rem;">{% translate "Obligatorio" %}</span>
+                            </label>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                {{ form.senasa_zona }}
+                                <span class="font-monospace text-muted"></span>
+                                {{ form.senasa_estab }}
+                                <span class="font-monospace fw-bold text-muted">-</span>
+                                <span class="font-monospace text-muted fst-italic small">A001 (asignado por animal)</span>
+                                <span id="senasa-badge" class="badge bg-secondary ms-1">{% translate "Incompleto" %}</span>
+                            </div>
+                            {% if form.senasa_zona.errors %}
+                                <div class="text-danger small mt-1">{{ form.senasa_zona.errors|join:", " }}</div>
+                            {% endif %}
+                            {% if form.senasa_estab.errors %}
+                                <div class="text-danger small mt-1">{{ form.senasa_estab.errors|join:", " }}</div>
+                            {% endif %}
+                            {% if form.non_field_errors %}
+                                <div class="text-danger small mt-1">{{ form.non_field_errors|join:", " }}</div>
+                            {% endif %}
+                            <div class="form-text">Ej: <code>PU045</code> — zona/partido (2 letras) + nº establecimiento (3 dígitos)</div>
+                        </div>
+
+                        <!-- Breedplan -->
+                        <div class="col-md-4">
+                            <label class="form-label">
+                                {% translate "Breedplan" %}
+                                <span class="badge bg-secondary ms-1" style="font-size:.7rem;">{% translate "Optativo" %}</span>
+                            </label>
+                            {{ form.breedplan }}
+                            {% if form.breedplan.errors %}<div class="text-danger small mt-1">{{ form.breedplan.errors|join:", " }}</div>{% endif %}
+                        </div>
+
+                        <!-- HBA -->
+                        <div class="col-md-4">
+                            <label class="form-label">
+                                {% translate "HBA" %}
+                                <span class="badge bg-secondary ms-1" style="font-size:.7rem;">{% translate "Optativo" %}</span>
+                            </label>
+                            {{ form.hba }}
+                            {% if form.hba.errors %}<div class="text-danger small mt-1">{{ form.hba.errors|join:", " }}</div>{% endif %}
+                            <div class="form-text">{% translate "Nº de registro externo de la asociación" %}</div>
+                        </div>
+
+                    </div>
+
+                    <!-- BOTONES -->
+                    <div class="d-flex gap-2 mt-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="mdi mdi-content-save-outline me-1"></i>
+                            {% translate "Guardar" %}
+                        </button>
+                        <a href="{% url 'vista_lista_establecimientos' %}" class="btn btn-secondary">
+                            {% translate "Cancelar" %}
+                        </a>
+                        {% if modificacion %}
+                        <button type="submit" name="borrar" class="btn btn-danger ms-auto"
+                                onclick="return confirm('{% translate "¿Seguro que querés eliminar este establecimiento?" %}')">
+                            <i class="mdi mdi-trash-can-outline me-1"></i>
+                            {% translate "Borrar" %}
+                        </button>
+                        {% endif %}
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const zonaInput  = document.getElementById("id_senasa_zona");
+    const establInput = document.getElementById("id_senasa_estab");
+    const badge      = document.getElementById("senasa-badge");
+
+    if (!zonaInput || !establInput) return;
+
+    zonaInput.addEventListener("input", function () {
+        this.value = this.value.replace(/[^a-zA-Z]/g, "").toUpperCase().slice(0, 2);
+        actualizarBadge();
+    });
+
+    establInput.addEventListener("input", function () {
+        this.value = this.value.replace(/\D/g, "").slice(0, 3);
+        actualizarBadge();
+    });
+
+    function actualizarBadge() {
+        const completo = zonaInput.value.length === 2 && establInput.value.length === 3;
+        badge.textContent = completo ? "Válido" : "Incompleto";
+        badge.className   = completo ? "badge bg-success ms-1" : "badge bg-secondary ms-1";
+    }
+
+    actualizarBadge();
+});
+</script>
+{% endblock %}

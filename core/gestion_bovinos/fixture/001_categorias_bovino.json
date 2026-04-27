@@ -1,0 +1,16 @@
+[
+  {"model": "bovinos.categoriabovino", "pk":  1, "fields": {"nombre": "Ternero al pie de la madre", "codigo": "TERNERO_PIE",      "activo": true, "orden":  1, "observaciones": "Desde nacimiento hasta destete (~7 meses / ~200 kg)"}},
+  {"model": "bovinos.categoriabovino", "pk":  2, "fields": {"nombre": "Ternero/a destete",           "codigo": "TERNERO_DESTETE", "activo": true, "orden":  2, "observaciones": "Recría 1 — desde destete hasta ~270 kg (~4 meses)"}},
+  {"model": "bovinos.categoriabovino", "pk":  3, "fields": {"nombre": "Recría 2 novillito",          "codigo": "RECRIA2_NOV",     "activo": true, "orden":  3, "observaciones": "Macho castrado en recría 2 — hasta ~15 meses / ~300 kg"}},
+  {"model": "bovinos.categoriabovino", "pk":  4, "fields": {"nombre": "Recría 2 torito",             "codigo": "RECRIA2_TOR",     "activo": true, "orden":  4, "observaciones": "Macho entero en recría 2 — hasta ~15 meses / ~300 kg"}},
+  {"model": "bovinos.categoriabovino", "pk":  5, "fields": {"nombre": "Recría 2 vaquillona",         "codigo": "RECRIA2_VAQ",     "activo": true, "orden":  5, "observaciones": "Hembra en recría 2 — hasta ~15 meses / ~280 kg"}},
+  {"model": "bovinos.categoriabovino", "pk":  6, "fields": {"nombre": "Novillito",                   "codigo": "NOVILLITO",       "activo": true, "orden":  6, "observaciones": "Macho castrado en engorde — post recría 2"}},
+  {"model": "bovinos.categoriabovino", "pk":  7, "fields": {"nombre": "Novillo",                     "codigo": "NOVILLO",         "activo": true, "orden":  7, "observaciones": "Macho castrado en engorde final — previo a faena o venta"}},
+  {"model": "bovinos.categoriabovino", "pk":  8, "fields": {"nombre": "Torito",                      "codigo": "TORITO",          "activo": true, "orden":  8, "observaciones": "Macho entero joven — hasta ~20 meses, destino venta"}},
+  {"model": "bovinos.categoriabovino", "pk":  9, "fields": {"nombre": "Vaquillona de reposición",    "codigo": "VAQ_REPOS",       "activo": true, "orden":  9, "observaciones": "Hembra seleccionada para incorporarse al rodeo madre"}},
+  {"model": "bovinos.categoriabovino", "pk": 10, "fields": {"nombre": "Vaquillona de venta",         "codigo": "VAQ_VENTA",       "activo": true, "orden": 10, "observaciones": "Hembra descartada de reposición — venta como vientre o faena"}},
+  {"model": "bovinos.categoriabovino", "pk": 11, "fields": {"nombre": "Vaca de cría",                "codigo": "VACA_CRIA",       "activo": true, "orden": 11, "observaciones": "Hembra adulta en rodeo madre — vaca en servicio"}},
+  {"model": "bovinos.categoriabovino", "pk": 12, "fields": {"nombre": "Vaca descarte",               "codigo": "VACA_DESCARTE",   "activo": true, "orden": 12, "observaciones": "Vaca retirada del rodeo madre — venta o faena"}},
+  {"model": "bovinos.categoriabovino", "pk": 13, "fields": {"nombre": "Toro",                        "codigo": "TORO",            "activo": true, "orden": 13, "observaciones": "Macho reproductor adulto en servicio"}},
+  {"model": "bovinos.categoriabovino", "pk": 14, "fields": {"nombre": "Toro descarte",               "codigo": "TORO_DESCARTE",   "activo": true, "orden": 14, "observaciones": "Toro retirado del servicio — venta o faena"}}
+]

@@ -1,0 +1,86 @@
+[
+  {
+    "model": "bovinos.umbralcambiocategoria", "pk": 1,
+    "fields": {
+      "categoria_origen": 1, "categoria_destino": 2,
+      "sexo_requerido": null,
+      "peso_minimo_kg": "180.00", "edad_minima_dias": 180,
+      "requiere_ambos": false,
+      "motivo_sugerido": "DESTETE",
+      "activo": true,
+      "observaciones": "Ternero al pie → destete: peso ≥180 kg o edad ≥180 días"
+    }
+  },
+  {
+    "model": "bovinos.umbralcambiocategoria", "pk": 2,
+    "fields": {
+      "categoria_origen": 2, "categoria_destino": 3,
+      "sexo_requerido": "M",
+      "peso_minimo_kg": "250.00", "edad_minima_dias": 270,
+      "requiere_ambos": false,
+      "motivo_sugerido": "AVANCE_EDAD_PESO",
+      "activo": true,
+      "observaciones": "Ternero destete macho → Recría 2 novillito: ≥250 kg o ≥270 días"
+    }
+  },
+  {
+    "model": "bovinos.umbralcambiocategoria", "pk": 3,
+    "fields": {
+      "categoria_origen": 2, "categoria_destino": 4,
+      "sexo_requerido": "M",
+      "peso_minimo_kg": "250.00", "edad_minima_dias": 270,
+      "requiere_ambos": false,
+      "motivo_sugerido": "AVANCE_EDAD_PESO",
+      "activo": true,
+      "observaciones": "Ternero destete macho → Recría 2 torito: ≥250 kg o ≥270 días"
+    }
+  },
+  {
+    "model": "bovinos.umbralcambiocategoria", "pk": 4,
+    "fields": {
+      "categoria_origen": 2, "categoria_destino": 5,
+      "sexo_requerido": "H",
+      "peso_minimo_kg": "240.00", "edad_minima_dias": 270,
+      "requiere_ambos": false,
+      "motivo_sugerido": "AVANCE_EDAD_PESO",
+      "activo": true,
+      "observaciones": "Ternero destete hembra → Recría 2 vaquillona: ≥240 kg o ≥270 días"
+    }
+  },
+  {
+    "model": "bovinos.umbralcambiocategoria", "pk": 5,
+    "fields": {
+      "categoria_origen": 3, "categoria_destino": 6,
+      "sexo_requerido": "M",
+      "peso_minimo_kg": "290.00", "edad_minima_dias": 420,
+      "requiere_ambos": false,
+      "motivo_sugerido": "AVANCE_EDAD_PESO",
+      "activo": true,
+      "observaciones": "Recría 2 novillito → Novillito: ≥290 kg o ≥420 días (~14 meses)"
+    }
+  },
+  {
+    "model": "bovinos.umbralcambiocategoria", "pk": 6,
+    "fields": {
+      "categoria_origen": 4, "categoria_destino": 8,
+      "sexo_requerido": "M",
+      "peso_minimo_kg": "290.00", "edad_minima_dias": 420,
+      "requiere_ambos": false,
+      "motivo_sugerido": "AVANCE_EDAD_PESO",
+      "activo": true,
+      "observaciones": "Recría 2 torito → Torito: ≥290 kg o ≥420 días (~14 meses)"
+    }
+  },
+  {
+    "model": "bovinos.umbralcambiocategoria", "pk": 7,
+    "fields": {
+      "categoria_origen": 6, "categoria_destino": 7,
+      "sexo_requerido": "M",
+      "peso_minimo_kg": "380.00", "edad_minima_dias": 548,
+      "requiere_ambos": false,
+      "motivo_sugerido": "AVANCE_EDAD_PESO",
+      "activo": true,
+      "observaciones": "Novillito → Novillo: ≥380 kg o ≥548 días (~18 meses)"
+    }
+  }
+]

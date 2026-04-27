@@ -1,0 +1,29 @@
+[
+  {"model": "bovinos.estadovidaanimal", "pk": 1, "fields": {"nombre": "Vivo",            "codigo": "VIVO",       "activo": true, "orden": 1, "observaciones": null}},
+  {"model": "bovinos.estadovidaanimal", "pk": 2, "fields": {"nombre": "Muerto",          "codigo": "MUERTO",     "activo": true, "orden": 2, "observaciones": null}},
+  {"model": "bovinos.estadovidaanimal", "pk": 3, "fields": {"nombre": "Vendido",         "codigo": "VENDIDO",    "activo": true, "orden": 3, "observaciones": null}},
+  {"model": "bovinos.estadovidaanimal", "pk": 4, "fields": {"nombre": "Perdido",         "codigo": "PERDIDO",    "activo": true, "orden": 4, "observaciones": null}},
+  {"model": "bovinos.estadovidaanimal", "pk": 5, "fields": {"nombre": "Robado",          "codigo": "ROBADO",     "activo": true, "orden": 5, "observaciones": null}},
+
+  {"model": "bovinos.tiporodeo", "pk": 1, "fields": {"nombre": "Rodeo general",          "codigo": "GENERAL",    "activo": true, "orden": 1, "observaciones": null}},
+  {"model": "bovinos.tiporodeo", "pk": 2, "fields": {"nombre": "Rodeo de cría",          "codigo": "CRIA",       "activo": true, "orden": 2, "observaciones": "Vacas en servicio y con ternero al pie"}},
+  {"model": "bovinos.tiporodeo", "pk": 3, "fields": {"nombre": "Rodeo de recría",        "codigo": "RECRIA",     "activo": true, "orden": 3, "observaciones": "Terneros y terneras en recría"}},
+  {"model": "bovinos.tiporodeo", "pk": 4, "fields": {"nombre": "Rodeo de engorde",       "codigo": "ENGORDE",    "activo": true, "orden": 4, "observaciones": "Novillitos y novillos en engorde"}},
+  {"model": "bovinos.tiporodeo", "pk": 5, "fields": {"nombre": "Rodeo de toros",         "codigo": "TOROS",      "activo": true, "orden": 5, "observaciones": "Toros en servicio o descanso"}},
+  {"model": "bovinos.tiporodeo", "pk": 6, "fields": {"nombre": "Rodeo de vaquillonas",   "codigo": "VAQUILLONAS","activo": true, "orden": 6, "observaciones": "Vaquillonas de reposición o venta"}},
+
+  {"model": "bovinos.estadoreproductivo", "pk": 1, "fields": {"nombre": "Sin definir",   "codigo": "SIN_DEF",    "activo": true, "orden": 1, "observaciones": null}},
+  {"model": "bovinos.estadoreproductivo", "pk": 2, "fields": {"nombre": "En servicio",   "codigo": "EN_SERV",    "activo": true, "orden": 2, "observaciones": null}},
+  {"model": "bovinos.estadoreproductivo", "pk": 3, "fields": {"nombre": "Preñada",       "codigo": "PRENADA",    "activo": true, "orden": 3, "observaciones": null}},
+  {"model": "bovinos.estadoreproductivo", "pk": 4, "fields": {"nombre": "Vacía",         "codigo": "VACIA",      "activo": true, "orden": 4, "observaciones": null}},
+  {"model": "bovinos.estadoreproductivo", "pk": 5, "fields": {"nombre": "Con ternero",   "codigo": "CON_TERN",   "activo": true, "orden": 5, "observaciones": null}},
+  {"model": "bovinos.estadoreproductivo", "pk": 6, "fields": {"nombre": "Descartada",    "codigo": "DESCARTADA", "activo": true, "orden": 6, "observaciones": null}},
+
+  {"model": "bovinos.tipomedicion", "pk": 1, "fields": {"nombre": "Nacimiento",          "codigo": "NACIMIENTO", "activo": true, "orden": 1, "observaciones": "Peso al nacer — registrado en el parto"}},
+  {"model": "bovinos.tipomedicion", "pk": 2, "fields": {"nombre": "Destete",             "codigo": "DESTETE",    "activo": true, "orden": 2, "observaciones": "Peso al momento del destete (~7 meses)"}},
+  {"model": "bovinos.tipomedicion", "pk": 3, "fields": {"nombre": "Recría 1",            "codigo": "RECRIA1",    "activo": true, "orden": 3, "observaciones": "Pesada durante o al final de la recría 1"}},
+  {"model": "bovinos.tipomedicion", "pk": 4, "fields": {"nombre": "Recría 2",            "codigo": "RECRIA2",    "activo": true, "orden": 4, "observaciones": "Pesada durante o al final de la recría 2"}},
+  {"model": "bovinos.tipomedicion", "pk": 5, "fields": {"nombre": "Control de rutina",   "codigo": "RUTINA",     "activo": true, "orden": 5, "observaciones": "Pesada periódica general"}},
+  {"model": "bovinos.tipomedicion", "pk": 6, "fields": {"nombre": "Pre-venta",           "codigo": "PRE_VENTA",  "activo": true, "orden": 6, "observaciones": "Peso tomado previo a la venta o faena"}},
+  {"model": "bovinos.tipomedicion", "pk": 7, "fields": {"nombre": "Ecografía",           "codigo": "ECOGRAFIA",  "activo": true, "orden": 7, "observaciones": "Medición con ecógrafo — incluye AOB, GD, GC, GIM"}}
+]

@@ -1,0 +1,305 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block plugin_css %}
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+
+  {% if messages %}
+  <div class="mb-4">
+    {% for message in messages %}
+    <div class="alert {{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
+      <i class="mdi
+        {% if 'success' in message.tags %}mdi-check-circle
+        {% elif 'danger' in message.tags %}mdi-alert-circle
+        {% elif 'warning' in message.tags %}mdi-alert
+        {% else %}mdi-information{% endif %}
+        me-2"></i>
+      <div>{{ message }}</div>
+      <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="row">
+    <div class="col-sm-12">
+      <div class="home-tab">
+        <div class="d-sm-flex align-items-center justify-content-between border-bottom pb-3">
+          <div>
+            <h4 class="mb-1">{% if modificacion %}Editar grupo de servicio{% else %}Grupos de servicio{% endif %}</h4>
+            <p class="text-muted mb-0">Crear grupos y ver el listado cargado.</p>
+          </div>
+          <div class="btn-wrapper">
+            <a href="{% url 'index' %}" class="btn btn-otline-dark align-items-center">
+              <i class="icon-arrow-left"></i> Volver
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ================= ACORDEON FORMULARIO ================= #}
+  <div class="accordion mt-3" id="accordionGrupoServicio">
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="headingFormularioGrupo">
+        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFormularioGrupo" aria-expanded="true" aria-controls="collapseFormularioGrupo">
+          {% if modificacion %}Editar grupo{% else %}Crear nuevo grupo{% endif %}
+        </button>
+      </h2>
+
+      <div id="collapseFormularioGrupo" class="accordion-collapse collapse show" aria-labelledby="headingFormularioGrupo" data-bs-parent="#accordionGrupoServicio">
+        <div class="accordion-body">
+
+          <form method="post" novalidate id="form-grupo-servicio">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger mt-3">
+              {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            <div class="row mt-3">
+
+              <div class="col-lg-8 grid-margin stretch-card">
+                <div class="card card-rounded">
+                  <div class="card-body">
+
+                    <h4 class="card-title card-title-dash">Datos del grupo</h4>
+                    <p class="card-subtitle card-subtitle-dash mb-4">Información principal del servicio.</p>
+
+                    <div class="mb-3">
+                      <label for="{{ form.nombre.id_for_label }}" class="form-label">{{ form.nombre.label }}</label>
+                      {{ form.nombre }}
+                      {% if form.nombre.errors %}<div class="text-danger small mt-1">{{ form.nombre.errors.0 }}</div>{% endif %}
+                    </div>
+
+                    <div class="row">
+                      <div class="col-md-6 mb-3">
+                        <label for="{{ form.establecimiento.id_for_label }}" class="form-label">{{ form.establecimiento.label }}</label>
+                        {{ form.establecimiento }}
+                        {% if form.establecimiento.errors %}<div class="text-danger small mt-1">{{ form.establecimiento.errors.0 }}</div>{% endif %}
+                      </div>
+
+                      <div class="col-md-6 mb-3">
+                        <label for="{{ form.rodeo.id_for_label }}" class="form-label">{{ form.rodeo.label }}</label>
+                        {{ form.rodeo }}
+                        {% if form.rodeo.help_text %}<small class="form-text text-muted">{{ form.rodeo.help_text }}</small>{% endif %}
+                        {% if form.rodeo.errors %}<div class="text-danger small mt-1">{{ form.rodeo.errors.0 }}</div>{% endif %}
+                      </div>
+                    </div>
+
+                    <div class="row">
+                      <div class="col-md-6 mb-3">
+                        <label for="{{ form.tipo_servicio.id_for_label }}" class="form-label">{{ form.tipo_servicio.label }}</label>
+                        {{ form.tipo_servicio }}
+                        {% if form.tipo_servicio.errors %}<div class="text-danger small mt-1">{{ form.tipo_servicio.errors.0 }}</div>{% endif %}
+                      </div>
+
+                      <div class="col-md-6 mb-3">
+                        <label for="{{ form.padre_genetico.id_for_label }}" class="form-label">{{ form.padre_genetico.label }}</label>
+                        {{ form.padre_genetico }}
+                        {% if form.padre_genetico.help_text %}<small class="form-text text-muted">{{ form.padre_genetico.help_text }}</small>{% endif %}
+                        {% if form.padre_genetico.errors %}<div class="text-danger small mt-1">{{ form.padre_genetico.errors.0 }}</div>{% endif %}
+                      </div>
+                    </div>
+
+                    <div class="row">
+                      <div class="col-md-6 mb-3">
+                        <label for="{{ form.fecha_inicio.id_for_label }}" class="form-label">{{ form.fecha_inicio.label }}</label>
+                        {{ form.fecha_inicio }}
+                        {% if form.fecha_inicio.errors %}<div class="text-danger small mt-1">{{ form.fecha_inicio.errors.0 }}</div>{% endif %}
+                      </div>
+
+                      <div class="col-md-6 mb-3">
+                        <label for="{{ form.fecha_fin_prevista.id_for_label }}" class="form-label">{{ form.fecha_fin_prevista.label }}</label>
+                        {{ form.fecha_fin_prevista }}
+                        {% if form.fecha_fin_prevista.errors %}<div class="text-danger small mt-1">{{ form.fecha_fin_prevista.errors.0 }}</div>{% endif %}
+                      </div>
+                    </div>
+
+                    <div class="mb-3">
+                      <label for="{{ form.observaciones.id_for_label }}" class="form-label">{{ form.observaciones.label }}</label>
+                      {{ form.observaciones }}
+                      {% if form.observaciones.errors %}<div class="text-danger small mt-1">{{ form.observaciones.errors.0 }}</div>{% endif %}
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-lg-4 grid-margin stretch-card">
+                <div class="card card-rounded">
+                  <div class="card-body">
+
+                    <h4 class="card-title card-title-dash">Filtros para carga</h4>
+                    <p class="card-subtitle card-subtitle-dash mb-4">
+                      Se aplican cuando cargues animales desde el rodeo base.
+                    </p>
+
+                    <div class="form-check mb-3">
+                      {{ form.excluir_prenadas }}
+                      <label class="form-check-label ms-1" for="{{ form.excluir_prenadas.id_for_label }}">
+                        {{ form.excluir_prenadas.label }}
+                      </label>
+                      {% if form.excluir_prenadas.errors %}<div class="text-danger small mt-1">{{ form.excluir_prenadas.errors.0 }}</div>{% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                      <label for="{{ form.dias_minimos_posparto.id_for_label }}" class="form-label">{{ form.dias_minimos_posparto.label }}</label>
+                      {{ form.dias_minimos_posparto }}
+                      {% if form.dias_minimos_posparto.errors %}<div class="text-danger small mt-1">{{ form.dias_minimos_posparto.errors.0 }}</div>{% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                      <label for="{{ form.edad_minima_dias.id_for_label }}" class="form-label">{{ form.edad_minima_dias.label }}</label>
+                      {{ form.edad_minima_dias }}
+                      {% if form.edad_minima_dias.errors %}<div class="text-danger small mt-1">{{ form.edad_minima_dias.errors.0 }}</div>{% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                      <label for="{{ form.peso_minimo_kg.id_for_label }}" class="form-label">{{ form.peso_minimo_kg.label }}</label>
+                      {{ form.peso_minimo_kg }}
+                      {% if form.peso_minimo_kg.errors %}<div class="text-danger small mt-1">{{ form.peso_minimo_kg.errors.0 }}</div>{% endif %}
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-sm-12">
+                <div class="d-flex justify-content-end gap-2 mb-2">
+                  <a href="{% url 'index' %}" class="btn btn-otline-dark">Cancelar</a>
+                  <button type="submit" class="btn btn-primary text-white">
+                    <i class="mdi mdi-check"></i>
+                    {% if modificacion %}Guardar cambios{% else %}Crear grupo{% endif %}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </form>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ================= LISTA DE GRUPOS ================= #}
+  <div class="row mt-4">
+    <div class="col-sm-12">
+      <div class="card card-rounded">
+        <div class="card-body">
+          <h4 class="card-title card-title-dash">Lista de grupos de servicio</h4>
+          <p class="card-subtitle card-subtitle-dash mb-4">Detalle de fecha y nombre de los grupos cargados.</p>
+
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Fecha inicio</th>
+                  <th>Nombre</th>
+                  <th>Establecimiento</th>
+                  <th>Rodeo</th>
+                  <th>Tipo</th>
+                  <th>Estado</th>
+                  <th class="text-end">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for grupo in grupos %}
+                <tr>
+                  <td>{{ grupo.fecha_inicio|date:"d/m/Y" }}</td>
+                  <td>{{ grupo.nombre }}</td>
+                  <td>{{ grupo.establecimiento }}</td>
+                  <td>{{ grupo.rodeo|default:"—" }}</td>
+                  <td>{{ grupo.get_tipo_servicio_display }}</td>
+                  <td>{{ grupo.get_estado_display }}</td>
+                  <td class="text-end">
+                    <a href="{% url 'grupo_servicio_editar' grupo.id %}" class="btn btn-sm btn-outline-primary">
+                      Editar
+                    </a>
+                  </td>
+                  <td class="text-end">
+                  <a href="{% url 'grupo_servicio_detalle' grupo.id %}" class="btn btn-sm btn-outline-primary">
+                    Ver detalle
+                  </a>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="7" class="text-center text-muted py-4">
+                    No hay grupos de servicio cargados.
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block plugin_js %}
+{% endblock %}
+
+{% block custom_js %}
+<script>
+  $(function () {
+    var $selEst = $("#{{ form.establecimiento.id_for_label }}");
+    var $selRodeo = $("#{{ form.rodeo.id_for_label }}");
+    var rodeoSeleccionado = $selRodeo.val();
+
+    function limpiarRodeos() {
+      $selRodeo.html('<option value="">---------</option>');
+    }
+
+    function cargarRodeos(establecimientoId) {
+      if (!establecimientoId) {
+        limpiarRodeos();
+        return;
+      }
+
+      $.ajax({
+        url: "{% url 'ajax_rodeos_por_establecimiento' %}",
+        type: "GET",
+        data: { establecimiento: establecimientoId },
+        dataType: "json",
+        success: function (data) {
+          var html = '<option value="">---------</option>';
+
+          $.each(data.rodeos, function (i, r) {
+            var selected = (String(r.id) === String(rodeoSeleccionado)) ? ' selected' : '';
+            html += '<option value="' + r.id + '"' + selected + '>' + r.nombre + '</option>';
+          });
+
+          $selRodeo.html(html);
+        },
+        error: function () {
+          limpiarRodeos();
+        }
+      });
+    }
+
+    $selEst.on("change", function () {
+      rodeoSeleccionado = "";
+      cargarRodeos($(this).val());
+    });
+
+    if ($selEst.val()) {
+      cargarRodeos($selEst.val());
+    }
+  });
+</script>
+{% endblock %}

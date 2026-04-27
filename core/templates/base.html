@@ -36,53 +36,67 @@
 
     <link rel="shortcut icon" style="height:32px;" href="{% static 'images/logo-chico.png' %}" />
 <style>
-.navbar.default-layout {
-  display: flex;
-  align-items: center;
-}
+  /* --- Estructura Principal del Navbar --- */
+  .navbar.default-layout {
+    display: flex;
+    align-items: center;
+    height: 70px !important; /* Altura estándar estable */
+    z-index: 1030; /* Asegura que esté por encima de todo */
+  }
 
-.navbar.default-layout .navbar-menu-wrapper{
-  display: flex !important;
-  align-items: center !important;
-  flex: 1 1 auto !important;
-}
+  /* 1. Contenedor del Logo (Fondo blanco sólido y alineado a la izquierda) */
+  .navbar .navbar-brand-wrapper {
+    width: 244px !important;
+    padding-left: 20px !important; /* Espacio desde el borde izquierdo */
+    padding-right: 10px !important;
+    display: flex !important;
+    justify-content: flex-start !important; 
+    align-items: center !important;
+    background: #ffffff !important; /* Blanco sólido para que no se trasluzca el menú */
+    height: 70px !important;
+    border-bottom: 1px solid #eeeeee; /* Opcional: una línea sutil para separar */
+  }
 
-.navbar.default-layout .navbar-menu-wrapper .navbar-nav:first-child{
-  display: flex;
-  align-items: center;
-  margin: 0;
-}
-@media (min-width: 992px) {
+  /* 2. Link del Logo */
+  .navbar .navbar-brand {
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  /* 3. La Imagen: Grande pero contenida */
+  .navbar .brand-logo img {
+    height: 55px !important; /* Tamaño máximo recomendado para que no rompa el diseño */
+    width: auto !important;
+    max-width: 200px !important; 
+    object-fit: contain !important;
+  }
+
+  /* --- Contenedor de Menú (Derecha) --- */
+  .navbar.default-layout .navbar-menu-wrapper {
+    width: calc(100% - 244px) !important;
+    height: 70px !important;
+    background: #ffffff !important;
+  }
+
+  /* --- Ajuste de la Sidebar para que no suba --- */
+  @media (min-width: 992px) {
     .sidebar.sidebar-offcanvas {
-        position: fixed;
-        top: 100px;
-        left: 0;
-        width: 244px;
-        height: calc(100vh - 70px);
-        overflow-y: auto;
-        z-index: 1020;
+      position: fixed;
+      top: 70px !important; /* Empieza exactamente donde termina el navbar */
+      left: 0;
+      width: 244px;
+      z-index: 1020;
     }
 
     .main-panel {
-        margin-left: 244px;
-        width: calc(100% - 244px);
+      margin-left: 244px;
+      padding-top: 20px; /* Espacio extra para el contenido */
     }
-
-    .page-body-wrapper {
-        position: relative;
-    }
-}
-.navbar .brand-logo img {
-    height: 55px;   /* ajusta este valor */
-    width: auto;
-}
-
-.navbar .brand-logo-mini img {
-    height: 40px;   /* versión pequeña */
-    width: auto;
-}
-
+  }
 </style>
+
 </head>
   <body class="with-welcome-text">
     <div class="container-scroller">
@@ -93,11 +107,11 @@
               <span class="icon-menu"></span>
             </button> {% endcomment %}
           </div>
-          <div>
-            <a class="navbar-brand brand-logo ms-0" href="{% url 'index' %}" target="_self">
-                <img src="{% static 'images/logo.png' %}" alt="logo" style="height:56px;" />
-            </a>
-          </div>
+          <div class="text-center navbar-brand-wrapper d-flex align-items-center justify-content-center">
+              <a class="navbar-brand brand-logo" href="{% url 'index' %}" target="_self">
+                  <img src="{% static 'images/logo_innobreed.png' %}" alt="logo" />
+              </a>
+            </div>
         </div>
         <div class="navbar-menu-wrapper d-flex align-items-center justify-content-between w-75">
           <ul class="navbar-nav">
@@ -321,6 +335,20 @@
         <!-- sidebar -->
         <nav class="sidebar sidebar-offcanvas" id="sidebar">
           <ul class="nav">
+            <li class="nav-item">
+              <a class="nav-link" data-bs-toggle="collapse" href="#configuracion" aria-expanded="false" aria-controls="configuracion">
+                  <i class="menu-icon mdi mdi-cog-outline"></i>
+                  <span class="menu-title">{% translate "Configuración" %}</span>
+                  <i class="menu-arrow"></i>
+              </a>
+              <div class="collapse" id="configuracion">
+                  <ul class="nav flex-column sub-menu">
+                      <li class="nav-item">
+                          <a class="nav-link" href="{% url 'vista_lista_establecimientos' %}">{% translate "Establecimientos" %}</a>
+                      </li>
+                  </ul>
+              </div>
+          </li>
             <li class="nav-item">
               <a class="nav-link" href="{% url 'index' %}">
                 <i class="mdi mdi-grid-large menu-icon"></i>
