@@ -30,8 +30,8 @@
             </a>
             <a href="{% url 'dashboard' %}" class="btn btn-otline-dark">
               <i class="icon-arrow-left"></i> Volver
-            </a> {% endcomment %}
-          </div>
+            </a> 
+          </div>{% endcomment %}
         </div>
       </div>
     </div>
@@ -99,7 +99,7 @@
               {% if grupo.esta_abierto %}
                 {% if grupo.rodeo %}
                 <button type="button"
-                        class="btn btn-otline-dark"
+                        class="btn btn-outline-dark"
                         data-bs-toggle="modal"
                         data-bs-target="#modalAgregarDesdeRodeo">
                   <i class="mdi mdi-cow"></i> Agregar desde rodeo
