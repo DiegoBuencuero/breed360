@@ -4,8 +4,11 @@ from django.core.exceptions import ValidationError
 import re
 from django.utils.translation import gettext_lazy as _
 from agro.forms import BaseForm, BaseSimpleForm
-from .models import ( AnimalBovino,  MovimientoRodeo, EventoReproductivo, Rodeo,RazaBovino, SubRaza,  Rodeo,
-    SubRaza,Establecimiento, RegistroSanitario, PadreGenetico, GrupoServicio
+from .models import (
+    AnimalBovino, MovimientoRodeo, EventoReproductivo, Rodeo, RazaBovino,
+    SubRaza, Establecimiento, RegistroSanitario, PadreGenetico, GrupoServicio,
+    EventoGrupoServicio, TipoEvento, Insumo, ViaAdministracion,
+    DiagnosticoPreñezRodeo, MetodoDiagnostico,
 )
 
 class BaseForm(ModelForm):
@@ -296,6 +299,40 @@ class EventoReproductivoForm(forms.ModelForm):
             self.fields["animal_resultante"].queryset = AnimalBovino.objects.filter(
                 rodeo__establecimiento__empresa=empresa
             ).order_by("-id")
+
+class EventoGrupoServicioForm(forms.ModelForm):
+    class Meta:
+        model  = EventoGrupoServicio
+        fields = ["fecha", "tipo", "insumo", "dosis", "via_admin", "observaciones"]
+        widgets = {
+            "fecha":         forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+            "tipo":          forms.Select(attrs={"class": "form-select", "id": "id_tipo_evento"}),
+            "insumo":        forms.Select(attrs={"class": "form-select", "id": "id_insumo"}),
+            "dosis":         forms.TextInput(attrs={"class": "form-control", "placeholder": "Ej: 2 ml"}),
+            "via_admin":     forms.Select(attrs={"class": "form-select"}),
+            "observaciones": forms.Textarea(attrs={"class": "form-control", "rows": 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["tipo"].queryset    = TipoEvento.objects.filter(activo=True).order_by("categoria", "orden", "nombre")
+        self.fields["insumo"].queryset  = Insumo.objects.filter(activo=True).order_by("tipo", "nombre")
+        self.fields["insumo"].required  = False
+        self.fields["via_admin"].required = False
+        self.fields["observaciones"].required = False
+
+
+class DiagnosticoPreñezRodeoForm(forms.ModelForm):
+    class Meta:
+        model  = DiagnosticoPreñezRodeo
+        fields = ["fecha", "metodo", "veterinario", "observaciones"]
+        widgets = {
+            "fecha":         forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+            "metodo":        forms.Select(attrs={"class": "form-select"}),
+            "veterinario":   forms.TextInput(attrs={"class": "form-control", "placeholder": "Nombre del veterinario"}),
+            "observaciones": forms.Textarea(attrs={"class": "form-control", "rows": 2}),
+        }
+
 
 class RegistroSanitarioForm(forms.ModelForm):
     class Meta:

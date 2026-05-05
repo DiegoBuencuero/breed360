@@ -1,0 +1,187 @@
+{% load i18n %}
+
+{% comment %} Historia reproductiva del animal: grupos, hormonas, servicios, diagnósticos {% endcomment %}
+
+{% comment %} GRUPOS DE SERVICIO {% endcomment %}
+<div class="card card-rounded mb-3">
+  <div class="card-body">
+    <h5 class="card-title card-title-dash mb-3">
+      <i class="mdi mdi-account-group-outline me-2 text-success"></i>Grupos de servicio
+    </h5>
+    {% if grupos_historico %}
+    <div class="table-responsive">
+      <table class="tabla-detalle table">
+        <thead>
+          <tr>
+            <th>Grupo</th>
+            <th>Tipo</th>
+            <th>Padre / Toro</th>
+            <th>Ingreso</th>
+            <th>Egreso</th>
+            <th>Días</th>
+            <th>Motivo egreso</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in grupos_historico %}
+          <tr>
+            <td>
+              <a href="{% url 'grupo_servicio_detalle' m.grupo.id %}" class="fw-semibold text-decoration-none">
+                {{ m.grupo.nombre }}
+              </a>
+            </td>
+            <td><span class="badge badge-opacity-primary">{{ m.grupo.get_tipo_servicio_display }}</span></td>
+            <td>{{ m.grupo.padre_genetico|default:"—" }}</td>
+            <td>{{ m.fecha_ingreso|date:"d/m/Y" }}</td>
+            <td>{{ m.fecha_egreso|date:"d/m/Y"|default:"<span class='badge badge-opacity-success'>Activa</span>" }}</td>
+            <td>{{ m.dias_en_grupo }}</td>
+            <td>{{ m.get_motivo_egreso_display|default:"—" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted mb-0">Sin grupos de servicio registrados.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% comment %} APLICACIONES DE INSUMO (Hormonas / Protocolo) {% endcomment %}
+<div class="card card-rounded mb-3">
+  <div class="card-body">
+    <h5 class="card-title card-title-dash mb-3">
+      <i class="mdi mdi-needle me-2 text-warning"></i>Protocolo hormonal aplicado
+    </h5>
+    {% if aplicaciones_insumo %}
+    <div class="table-responsive">
+      <table class="tabla-detalle table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Tipo de evento</th>
+            <th>Insumo</th>
+            <th>Dosis</th>
+            <th>Vía</th>
+            <th>Grupo</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ap in aplicaciones_insumo %}
+          <tr>
+            <td>{{ ap.evento_grupo.fecha|date:"d/m/Y" }}</td>
+            <td>{{ ap.evento_grupo.tipo }}</td>
+            <td>{{ ap.evento_grupo.insumo|default:"—" }}</td>
+            <td>{{ ap.evento_grupo.dosis|default:"—" }}</td>
+            <td>{{ ap.evento_grupo.get_via_admin_display|default:"—" }}</td>
+            <td>
+              <a href="{% url 'grupo_servicio_detalle' ap.evento_grupo.grupo_servicio.id %}" class="text-decoration-none small">
+                {{ ap.evento_grupo.grupo_servicio.nombre }}
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted mb-0">Sin aplicaciones hormonales registradas.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% comment %} SERVICIOS E IA (EventoReproductivo) {% endcomment %}
+<div class="card card-rounded mb-3">
+  <div class="card-body">
+    <h5 class="card-title card-title-dash mb-3">
+      <i class="mdi mdi-cow me-2 text-success"></i>Servicios / Inseminaciones
+    </h5>
+    {% if eventos_como_madre %}
+    <div class="table-responsive">
+      <table class="tabla-detalle table">
+        <thead>
+          <tr>
+            <th>Tipo</th>
+            <th>Fecha servicio</th>
+            <th>Padre / Semen</th>
+            <th>Fecha tacto</th>
+            <th>Resultado tacto</th>
+            <th>Fecha parto</th>
+            <th>Resultado parto</th>
+            <th>Cría</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ev in eventos_como_madre %}
+          <tr>
+            <td>
+              {% if ev.tipo_evento == 'INSEMINACION' %}
+                <span class="badge badge-opacity-success">IA</span>
+              {% else %}
+                <span class="badge badge-opacity-primary">Natural</span>
+              {% endif %}
+            </td>
+            <td>{{ ev.fecha_servicio|date:"d/m/Y" }}</td>
+            <td>{{ ev.padre_genetico|default:"—" }}</td>
+            <td>{{ ev.fecha_tacto|date:"d/m/Y"|default:"—" }}</td>
+            <td>
+              {% if ev.resultado_tacto == 'PRENADA' %}
+                <span class="badge badge-opacity-success">Preñada</span>
+              {% elif ev.resultado_tacto == 'VACIA' %}
+                <span class="badge badge-opacity-danger">Vacía</span>
+              {% elif ev.resultado_tacto == 'DUDOSA' %}
+                <span class="badge badge-opacity-warning">Dudosa</span>
+              {% else %}—{% endif %}
+            </td>
+            <td>{{ ev.fecha_parto|date:"d/m/Y"|default:"—" }}</td>
+            <td>
+              {% if ev.resultado_parto %}
+                <span class="badge badge-opacity-secondary">{{ ev.get_resultado_parto_display }}</span>
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              {% if ev.animal_resultante %}
+                <a href="{% url 'vista_detalle_bovino' ev.animal_resultante.id %}" class="btn btn-xs btn-outline-success">
+                  {{ ev.animal_resultante.tatuaje|default:"Ver cría" }}
+                </a>
+              {% else %}—{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted mb-0">Sin servicios ni inseminaciones registradas.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% comment %} Si el animal tiene un evento reproductivo de origen (es cría de alguien) {% endcomment %}
+{% if evento_origen %}
+<div class="card card-rounded">
+  <div class="card-body">
+    <h5 class="card-title card-title-dash mb-3">
+      <i class="mdi mdi-source-branch me-2"></i>Origen
+    </h5>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="mini-label">Madre</div>
+        <div class="mini-valor">
+          {% if evento_origen.madre %}
+            <a href="{% url 'vista_detalle_bovino' evento_origen.madre.id %}">{{ evento_origen.madre }}</a>
+          {% else %}—{% endif %}
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="mini-label">Padre</div>
+        <div class="mini-valor">{{ evento_origen.padre_genetico|default:"—" }}</div>
+      </div>
+      <div class="col-md-4">
+        <div class="mini-label">Fecha de servicio</div>
+        <div class="mini-valor">{{ evento_origen.fecha_servicio|date:"d/m/Y"|default:"—" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}

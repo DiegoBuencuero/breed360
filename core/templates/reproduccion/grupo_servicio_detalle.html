@@ -1,131 +1,133 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load i18n %}
 
-{% block plugin_css %}
-{% endblock %}
+{% block plugin_css %}{% endblock %}
 
 {% block content %}
 <div class="content-wrapper">
 
-  {# ============================================================ #}
-  {# Encabezado                                                   #}
-  {# ============================================================ #}
+  {% comment %} ENCABEZADO {% endcomment %}
   <div class="row">
     <div class="col-sm-12">
       <div class="home-tab">
         <div class="d-sm-flex align-items-center justify-content-between border-bottom pb-3">
           <div>
             <h4 class="mb-1">{{ grupo.nombre }}</h4>
-            <p class="text-muted mb-0">
+            <p class="text-muted mb-0 small">
               {{ grupo.get_tipo_servicio_display }}
               — {{ grupo.establecimiento.nombre }}
-              {% if grupo.rodeo %} — Rodeo base: {{ grupo.rodeo.nombre }}{% endif %}
-              — Padre: {{ grupo.padre_genetico.nombre }}
+              {% if grupo.rodeo %}— Rodeo base: {{ grupo.rodeo.nombre }}{% endif %}
+              {% if grupo.padre_genetico %}— Padre: {{ grupo.padre_genetico.nombre }}{% endif %}
               — Inicio: {{ grupo.fecha_inicio|date:"d/m/Y" }}
             </p>
           </div>
-          {% comment %} <div class="btn-wrapper">
-            <a href="{% url 'grupo_servicio_update' grupo.pk %}" class="btn btn-otline-dark align-items-center">
-              <i class="mdi mdi-pencil"></i> Editarccd
+          <div class="btn-wrapper d-flex gap-2">
+            <a href="{% url 'grupo_servicio_editar' grupo.id %}" class="btn btn-otline-dark btn-sm">
+              <i class="mdi mdi-pencil-outline"></i> Editar
             </a>
-            <a href="{% url 'dashboard' %}" class="btn btn-otline-dark">
-              <i class="icon-arrow-left"></i> Volver
-            </a> 
-          </div>{% endcomment %}
+            <a href="{% url 'grupo_servicio_crear' %}" class="btn btn-primary text-white btn-sm">
+              <i class="mdi mdi-plus"></i> Nueva tanda
+            </a>
+          </div>
         </div>
+
+        {% comment %} TABS {% endcomment %}
+        <ul class="nav nav-tabs tab-transparent-line border-0 mt-2" id="tabsGrupo" role="tablist">
+          <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="tab" href="#pane-resumen" role="tab">Resumen</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#pane-repro" role="tab">
+              <i class="mdi mdi-cow me-1"></i>Reproducción
+              {% if eventos_repro %}
+                <span class="badge badge-opacity-success ms-1">{{ eventos_repro|length }}</span>
+              {% endif %}
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#pane-sanidad" role="tab">
+              <i class="mdi mdi-needle me-1"></i>Sanidad
+              {% if eventos_sanit %}
+                <span class="badge badge-opacity-warning ms-1">{{ eventos_sanit|length }}</span>
+              {% endif %}
+            </a>
+          </li>
+        </ul>
       </div>
     </div>
   </div>
 
-  {# ============================================================ #}
-  {# KPIs del grupo                                                #}
-  {# ============================================================ #}
+  {% comment %} KPIs {% endcomment %}
   <div class="row mt-3">
     <div class="col-sm-12">
-      <div class="statistics-details d-flex align-items-center justify-content-between">
+      <div class="statistics-details d-flex align-items-center justify-content-between flex-wrap gap-3">
         <div>
-          <p class="statistics-title">Miembros activos</p>
+          <p class="statistics-title">Animales</p>
           <h3 class="rate-percentage">{{ grupo.total_activos }}</h3>
-          <p class="text-success d-flex"><i class="mdi mdi-menu-up"></i><span>en curso</span></p>
-        </div>
-        <div>
-          <p class="statistics-title">Histórico</p>
-          <h3 class="rate-percentage">{{ grupo.total_historico }}</h3>
-          <p class="text-muted d-flex"><span>ingresos totales</span></p>
+          <p class="text-success d-flex mb-0"><span>activos</span></p>
         </div>
         <div>
           <p class="statistics-title">Estado</p>
           <h3 class="rate-percentage">{{ grupo.get_estado_display }}</h3>
-          <p class="text-muted d-flex"><span>{{ grupo.fecha_inicio|date:"d/m/Y" }}</span></p>
+          <p class="text-muted d-flex mb-0"><span>{{ grupo.fecha_inicio|date:"d/m/Y" }}</span></p>
         </div>
-        <div class="d-none d-md-block">
+        <div>
           <p class="statistics-title">Fin previsto</p>
           <h3 class="rate-percentage">{{ grupo.fecha_fin_prevista|date:"d/m/Y"|default:"—" }}</h3>
-          <p class="text-muted d-flex"><span>planificado</span></p>
+          <p class="text-muted d-flex mb-0"><span>planificado</span></p>
         </div>
-        <div class="d-none d-md-block">
-          <p class="statistics-title">Días posparto mín.</p>
-          <h3 class="rate-percentage">{{ grupo.dias_minimos_posparto }}</h3>
-          <p class="text-muted d-flex"><span>filtro base</span></p>
+        <div>
+          <p class="statistics-title">Posparto mín.</p>
+          <h3 class="rate-percentage">{{ grupo.dias_minimos_posparto }}d</h3>
+          <p class="text-muted d-flex mb-0"><span>filtro</span></p>
         </div>
-        <div class="d-none d-md-block">
-          <p class="statistics-title">Peso mín. / Edad mín.</p>
-          <h3 class="rate-percentage">
-            {{ grupo.peso_minimo_kg|default:"—" }}{% if grupo.peso_minimo_kg %}kg{% endif %}
-            / {{ grupo.edad_minima_dias|default:"—" }}{% if grupo.edad_minima_dias %}d{% endif %}
-          </h3>
-          <p class="text-muted d-flex"><span>filtros</span></p>
+        <div>
+          <p class="statistics-title">Diagnóstico</p>
+          {% if diagnostico %}
+            <h3 class="rate-percentage text-success">{{ diagnostico.pct_prenez }}%</h3>
+            <p class="text-muted d-flex mb-0"><span>preñez</span></p>
+          {% else %}
+            <h3 class="rate-percentage">—</h3>
+            <p class="text-muted d-flex mb-0"><span>pendiente</span></p>
+          {% endif %}
         </div>
       </div>
     </div>
   </div>
 
-  {# ============================================================ #}
-  {# Listado de miembros activos                                   #}
-  {# ============================================================ #}
-  <div class="row mt-3">
-    <div class="col-12 grid-margin stretch-card">
+  {% comment %} CONTENIDO DE TABS {% endcomment %}
+  <div class="tab-content mt-3" id="tabsGrupoContent">
+
+    {% comment %} TAB RESUMEN {% endcomment %}
+    <div class="tab-pane fade show active" id="pane-resumen" role="tabpanel">
       <div class="card card-rounded">
         <div class="card-body">
-
-          <div class="d-sm-flex justify-content-between align-items-start">
+          <div class="d-sm-flex justify-content-between align-items-start mb-3">
             <div>
               <h4 class="card-title card-title-dash">Miembros del grupo</h4>
-              <p class="card-subtitle card-subtitle-dash">
-                Animales actualmente asignados al servicio.
-              </p>
+              <p class="card-subtitle card-subtitle-dash">Animales actualmente asignados al servicio.</p>
             </div>
-            <div class="btn-wrapper">
+            <div class="d-flex gap-2">
               {% if grupo.esta_abierto %}
                 {% if grupo.rodeo %}
-                <button type="button"
-                        class="btn btn-outline-dark"
-                        data-bs-toggle="modal"
-                        data-bs-target="#modalAgregarDesdeRodeo">
+                <button class="btn btn-otline-dark btn-sm" data-bs-toggle="modal" data-bs-target="#modalAgregarDesdeRodeo">
                   <i class="mdi mdi-cow"></i> Agregar desde rodeo
                 </button>
                 {% endif %}
-                <button type="button"
-                        class="btn btn-primary text-white me-0"
-                        data-bs-toggle="modal"
-                        data-bs-target="#modalBuscarAnimal">
+                <button class="btn btn-primary text-white btn-sm" data-bs-toggle="modal" data-bs-target="#modalBuscarAnimal">
                   <i class="mdi mdi-magnify"></i> Buscar animal
                 </button>
               {% endif %}
             </div>
           </div>
-
-          <div class="table-responsive mt-3">
+          <div class="table-responsive">
             <table class="table select-table">
               <thead>
                 <tr>
-                  <th>Animal</th>
-                  <th>Categoría</th>
-                  <th>Edad</th>
-                  <th>Último peso</th>
-                  <th>Ingreso</th>
-                  <th>Días en grupo</th>
-                  <th class="text-end">Acciones</th>
+                  <th>Animal</th><th>Categoría</th><th>Edad</th>
+                  <th>Último peso</th><th>Ingreso</th><th>Días en grupo</th>
+                  {% if grupo.esta_abierto %}<th class="text-end">Acción</th>{% endif %}
                 </tr>
               </thead>
               <tbody id="tbody-miembros">
@@ -133,72 +135,271 @@
                 <tr data-miembro-id="{{ m.pk }}">
                   <td>
                     <h6 class="mb-0">{{ m.animal.caravana_senasa|default:m.animal.tatuaje|default:"—" }}</h6>
-                    <p class="mb-0 text-muted small">{{ m.animal.rodeo.nombre }}</p>
+                    <small class="text-muted">{{ m.animal.rodeo.nombre }}</small>
                   </td>
                   <td>{{ m.animal.categoria_actual|default:"—" }}</td>
                   <td>{{ m.animal.edad_display|default:"—" }}</td>
                   <td>{{ m.animal.ultimo_peso|default:"—" }}{% if m.animal.ultimo_peso %} kg{% endif %}</td>
                   <td>{{ m.fecha_ingreso|date:"d/m/Y" }}</td>
                   <td>{{ m.dias_en_grupo }}</td>
+                  {% if grupo.esta_abierto %}
                   <td class="text-end">
-                    {% if grupo.esta_abierto %}
-                    <button type="button"
-                            class="btn btn-sm btn-otline-dark btn-quitar-miembro"
-                            data-miembro-id="{{ m.pk }}">
+                    <button class="btn btn-sm btn-otline-dark btn-quitar-miembro" data-miembro-id="{{ m.pk }}">
                       <i class="mdi mdi-close"></i> Quitar
                     </button>
-                    {% endif %}
                   </td>
+                  {% endif %}
                 </tr>
                 {% empty %}
                 <tr>
-                  <td colspan="7" class="text-center text-muted py-4">
-                    Este grupo todavía no tiene miembros. Agregá animales con los botones de arriba.
-                  </td>
+                  <td colspan="7" class="text-center text-muted py-4">Sin miembros. Usá los botones de arriba para agregar animales.</td>
                 </tr>
                 {% endfor %}
               </tbody>
             </table>
           </div>
-
         </div>
       </div>
     </div>
-  </div>
 
+    {% comment %} TAB REPRODUCCIÓN {% endcomment %}
+    <div class="tab-pane fade" id="pane-repro" role="tabpanel">
+      <div class="d-flex gap-2 mb-3">
+        {% if grupo.esta_abierto %}
+        <button class="btn btn-primary text-white" data-bs-toggle="modal" data-bs-target="#modalEventoRepro">
+          <i class="mdi mdi-plus-circle-outline"></i> Evento reproductivo
+        </button>
+        {% endif %}
+        <a href="{% url 'vista_diagnostico_grupo' grupo.pk %}"
+           class="btn {% if diagnostico %}btn-success text-white{% else %}btn-otline-dark{% endif %}">
+          <i class="mdi mdi-clipboard-check-outline"></i>
+          {% if diagnostico %}
+            Diagnóstico — {{ diagnostico.pct_prenez }}% preñez ({{ diagnostico.total_prenadas }}/{{ diagnostico.total_diagnosticadas }})
+          {% else %}
+            Registrar diagnóstico de preñez
+          {% endif %}
+        </a>
+      </div>
+      <div class="card card-rounded">
+        <div class="card-body">
+          <h4 class="card-title card-title-dash">Eventos reproductivos registrados</h4>
+          <div class="table-responsive">
+            <table class="table select-table">
+              <thead>
+                <tr>
+                  <th>Fecha</th><th>Tipo de evento</th><th>Insumo</th>
+                  <th>Dosis</th><th>Vía</th>
+                  {% if grupo.esta_abierto %}<th class="text-end">Acción</th>{% endif %}
+                </tr>
+              </thead>
+              <tbody id="tbody-eventos-repro">
+                {% for ev in eventos_repro %}
+                <tr data-evento-id="{{ ev.pk }}">
+                  <td>{{ ev.fecha|date:"d/m/Y" }}</td>
+                  <td><span class="badge badge-opacity-success">{{ ev.tipo }}</span></td>
+                  <td>{{ ev.insumo|default:"—" }}</td>
+                  <td>{{ ev.dosis|default:"—" }}</td>
+                  <td>{{ ev.get_via_admin_display|default:"—" }}</td>
+                  {% if grupo.esta_abierto %}
+                  <td class="text-end">
+                    <button class="btn btn-sm btn-otline-dark btn-eliminar-evento" data-evento-id="{{ ev.pk }}">
+                      <i class="mdi mdi-delete-outline"></i>
+                    </button>
+                  </td>
+                  {% endif %}
+                </tr>
+                {% empty %}
+                <tr id="fila-sin-repro">
+                  <td colspan="6" class="text-center text-muted py-3">Sin eventos reproductivos.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% comment %} TAB SANIDAD {% endcomment %}
+    <div class="tab-pane fade" id="pane-sanidad" role="tabpanel">
+      <div class="d-flex gap-2 mb-3">
+        {% if grupo.esta_abierto %}
+        <button class="btn btn-primary text-white" data-bs-toggle="modal" data-bs-target="#modalEventoSanidad">
+          <i class="mdi mdi-plus-circle-outline"></i> Evento sanitario
+        </button>
+        {% endif %}
+      </div>
+      <div class="card card-rounded">
+        <div class="card-body">
+          <h4 class="card-title card-title-dash">Eventos sanitarios registrados</h4>
+          <div class="table-responsive">
+            <table class="table select-table">
+              <thead>
+                <tr>
+                  <th>Fecha</th><th>Tipo de evento</th><th>Insumo</th>
+                  <th>Dosis</th><th>Vía</th>
+                  {% if grupo.esta_abierto %}<th class="text-end">Acción</th>{% endif %}
+                </tr>
+              </thead>
+              <tbody id="tbody-eventos-sanit">
+                {% for ev in eventos_sanit %}
+                <tr data-evento-id="{{ ev.pk }}">
+                  <td>{{ ev.fecha|date:"d/m/Y" }}</td>
+                  <td><span class="badge badge-opacity-warning">{{ ev.tipo }}</span></td>
+                  <td>{{ ev.insumo|default:"—" }}</td>
+                  <td>{{ ev.dosis|default:"—" }}</td>
+                  <td>{{ ev.get_via_admin_display|default:"—" }}</td>
+                  {% if grupo.esta_abierto %}
+                  <td class="text-end">
+                    <button class="btn btn-sm btn-otline-dark btn-eliminar-evento" data-evento-id="{{ ev.pk }}">
+                      <i class="mdi mdi-delete-outline"></i>
+                    </button>
+                  </td>
+                  {% endif %}
+                </tr>
+                {% empty %}
+                <tr id="fila-sin-sanit">
+                  <td colspan="6" class="text-center text-muted py-3">Sin eventos sanitarios.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
 </div>
 
 
-{# ============================================================ #}
-{# MODAL 1 — Agregar desde rodeo                                 #}
-{# ============================================================ #}
-{% if grupo.rodeo and grupo.esta_abierto %}
+{% comment %} MODAL: Evento reproductivo {% endcomment %}
+{% if grupo.esta_abierto %}
+<div class="modal fade" id="modalEventoRepro" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="mdi mdi-cow me-2"></i>Evento reproductivo</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3" id="form-repro">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Fecha <span class="text-danger">*</span></label>
+            <input type="date" class="form-control inp-fecha" id="repro-fecha">
+          </div>
+          <div class="col-md-8">
+            <label class="form-label fw-semibold">Tipo de evento <span class="text-danger">*</span></label>
+            <select class="form-select sel-tipo" id="repro-tipo"></select>
+          </div>
+          <div class="col-md-6 row-insumo d-none">
+            <label class="form-label fw-semibold">Insumo</label>
+            <select class="form-select sel-insumo" id="repro-insumo"></select>
+          </div>
+          <div class="col-md-3 row-dosis d-none">
+            <label class="form-label fw-semibold">Dosis</label>
+            <input type="text" class="form-control inp-dosis" id="repro-dosis" placeholder="Ej: 2 ml">
+          </div>
+          <div class="col-md-3 row-via d-none">
+            <label class="form-label fw-semibold">Vía</label>
+            <select class="form-select sel-via" id="repro-via"></select>
+          </div>
+          <div class="col-12 row-padre d-none">
+            <label class="form-label fw-semibold">Padre genético / Toro <span class="text-danger">*</span></label>
+            <select class="form-select sel-padre" id="repro-padre">
+              <option value="">— Seleccioná el padre —</option>
+            </select>
+            <small class="text-muted">Requerido para IA y Repaso</small>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Observaciones</label>
+            <textarea class="form-control inp-obs" rows="2"></textarea>
+          </div>
+          <div class="col-12">
+            {% include "reproduccion/_seleccion_animales.html" %}
+          </div>
+        </div>
+        <div class="alert alert-danger mt-3 d-none ev-error" id="repro-error"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-otline-dark" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary text-white btn-guardar-ev" id="btn-guardar-repro">
+          <i class="mdi mdi-check"></i> Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% comment %} MODAL: Evento sanitario {% endcomment %}
+<div class="modal fade" id="modalEventoSanidad" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="mdi mdi-needle me-2"></i>Evento sanitario</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3" id="form-sanit">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Fecha <span class="text-danger">*</span></label>
+            <input type="date" class="form-control inp-fecha" id="sanit-fecha">
+          </div>
+          <div class="col-md-8">
+            <label class="form-label fw-semibold">Tipo de evento <span class="text-danger">*</span></label>
+            <select class="form-select sel-tipo" id="sanit-tipo"></select>
+          </div>
+          <div class="col-md-6 row-insumo d-none">
+            <label class="form-label fw-semibold">Insumo</label>
+            <select class="form-select sel-insumo" id="sanit-insumo"></select>
+          </div>
+          <div class="col-md-3 row-dosis d-none">
+            <label class="form-label fw-semibold">Dosis</label>
+            <input type="text" class="form-control inp-dosis" id="sanit-dosis" placeholder="Ej: 2 ml">
+          </div>
+          <div class="col-md-3 row-via d-none">
+            <label class="form-label fw-semibold">Vía</label>
+            <select class="form-select sel-via" id="sanit-via"></select>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Observaciones</label>
+            <textarea class="form-control inp-obs" rows="2"></textarea>
+          </div>
+          <div class="col-12">
+            {% include "reproduccion/_seleccion_animales.html" %}
+          </div>
+        </div>
+        <div class="alert alert-danger mt-3 d-none ev-error" id="sanit-error"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-otline-dark" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary text-white btn-guardar-ev" id="btn-guardar-sanit">
+          <i class="mdi mdi-check"></i> Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% comment %} MODAL: Agregar desde rodeo {% endcomment %}
+{% if grupo.rodeo %}
 <div class="modal fade" id="modalAgregarDesdeRodeo" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">
-          Agregar animales desde <strong>{{ grupo.rodeo.nombre }}</strong>
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        <h5 class="modal-title">Agregar desde <strong>{{ grupo.rodeo.nombre }}</strong></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-
       <div class="modal-body">
         <div class="d-flex justify-content-between align-items-center mb-3">
-          <p class="text-muted mb-0">
-            Las filas <span class="text-danger">en rojo</span> no cumplen los filtros del grupo.
-            Las podés agregar igual, se te va a pedir confirmación.
-          </p>
-          <div>
-            <span class="badge badge-opacity-primary" id="contador-seleccionados">0 seleccionados</span>
-          </div>
+          <p class="text-muted mb-0 small">Filas <span class="text-danger fw-semibold">en rojo</span> no cumplen los filtros del grupo.</p>
+          <span class="badge badge-opacity-primary" id="contador-seleccionados">0 seleccionados</span>
         </div>
-
         <div class="table-responsive">
           <table class="table select-table">
             <thead>
               <tr>
-                <th style="width: 40px;">
+                <th style="width:40px">
                   <div class="form-check form-check-flat mt-0">
                     <label class="form-check-label">
                       <input type="checkbox" class="form-check-input" id="check-all-rodeo">
@@ -206,25 +407,16 @@
                     </label>
                   </div>
                 </th>
-                <th>Animal</th>
-                <th>Categoría</th>
-                <th>Edad</th>
-                <th>Último peso</th>
-                <th>Estado reproductivo</th>
-                <th>Motivo</th>
+                <th>Animal</th><th>Categoría</th><th>Edad</th>
+                <th>Último peso</th><th>Estado repr.</th><th>Motivo</th>
               </tr>
             </thead>
             <tbody id="tbody-rodeo">
-              <tr>
-                <td colspan="7" class="text-center text-muted py-4">
-                  Cargando animales del rodeo…
-                </td>
-              </tr>
+              <tr><td colspan="7" class="text-center text-muted py-4">Cargando animales…</td></tr>
             </tbody>
           </table>
         </div>
       </div>
-
       <div class="modal-footer">
         <button type="button" class="btn btn-otline-dark" data-bs-dismiss="modal">Cancelar</button>
         <button type="button" class="btn btn-primary text-white" id="btn-agregar-seleccionados">
@@ -236,301 +428,279 @@
 </div>
 {% endif %}
 
-
-{# ============================================================ #}
-{# MODAL 2 — Buscar animal individual                            #}
-{# ============================================================ #}
-{% if grupo.esta_abierto %}
+{% comment %} MODAL: Buscar animal {% endcomment %}
 <div class="modal fade" id="modalBuscarAnimal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Buscar animal por caravana, tatuaje o nombre</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        <h5 class="modal-title">Buscar animal</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-
       <div class="modal-body">
-        <div class="mb-3">
-          <input type="text"
-                 id="input-buscar-animal"
-                 class="form-control"
-                 placeholder="Ej: 2501, A001, Lola..."
-                 autocomplete="off">
-          <small class="form-text text-muted">
-            Mínimo 2 caracteres. La búsqueda se dispara automáticamente.
-          </small>
-        </div>
-
+        <input type="text" id="input-buscar-animal" class="form-control mb-3"
+               placeholder="Caravana, tatuaje o nombre…" autocomplete="off">
         <div class="table-responsive">
           <table class="table select-table">
-            <thead>
-              <tr>
-                <th>Animal</th>
-                <th>Rodeo</th>
-                <th>Categoría</th>
-                <th>Edad</th>
-                <th class="text-end">Acción</th>
-              </tr>
-            </thead>
+            <thead><tr><th>Animal</th><th>Rodeo</th><th>Categoría</th><th>Edad</th><th class="text-end">Acción</th></tr></thead>
             <tbody id="tbody-buscar">
-              <tr>
-                <td colspan="5" class="text-center text-muted py-4">
-                  Escribí algo para comenzar a buscar.
-                </td>
-              </tr>
+              <tr><td colspan="5" class="text-center text-muted py-4">Escribí para buscar.</td></tr>
             </tbody>
           </table>
         </div>
       </div>
-
       <div class="modal-footer">
         <button type="button" class="btn btn-otline-dark" data-bs-dismiss="modal">Cerrar</button>
       </div>
     </div>
   </div>
 </div>
+
 {% endif %}
+
 
 {% endblock %}
 
 
 {% block custom_js %}
 <script>
-  // ============================================================
-  // Config global — URLs y grupo actual
-  // ============================================================
-  var GRUPO_ID    = {{ grupo.pk }};
-  var URL_ANIMALES_RODEO     = "{% url 'ajax_animales_del_rodeo_para_grupo' grupo.pk %}";
-  var URL_BUSCAR_ANIMAL      = "{% url 'ajax_buscar_animal_para_grupo' grupo.pk %}";
-  var URL_AGREGAR_MIEMBROS   = "{% url 'ajax_agregar_miembros' grupo.pk %}";
-  var URL_QUITAR_MIEMBRO     = "{% url 'ajax_quitar_miembro' grupo.pk %}";
-  var CSRF_TOKEN             = "{{ csrf_token }}";
+const URL_ANIMALES_RODEO   = "{% url 'ajax_animales_del_rodeo_para_grupo' grupo.pk %}";
+const URL_BUSCAR_ANIMAL    = "{% url 'ajax_buscar_animal_para_grupo' grupo.pk %}";
+const URL_AGREGAR_MIEMBROS = "{% url 'ajax_agregar_miembros' grupo.pk %}";
+const URL_QUITAR_MIEMBRO   = "{% url 'ajax_quitar_miembro' grupo.pk %}";
+const URL_AGREGAR_EVENTO   = "{% url 'ajax_agregar_evento_grupo' grupo.pk %}";
+const URL_ELIMINAR_EVENTO  = "{% url 'ajax_eliminar_evento_grupo' grupo.pk 0 %}".replace("/0/", "/");
+const CSRF_TOKEN           = "{{ csrf_token }}";
+const TIPOS_REPRO = {{ tipos_repro_json|safe }};
+const TIPOS_SANIT = {{ tipos_sanit_json|safe }};
+const INSUMOS     = {{ insumos_json|safe }};
+const VIA_CHOICES = {{ via_json|safe }};
+const PADRES      = {{ padres_json|safe }};
+const MIEMBROS    = {{ miembros_json|safe }};
 
+function buildTipoOpts(tipos) {
+  return '<option value="">— Tipo —</option>' + tipos.map(t =>
+    `<option value="${t.id}" data-insumo="${t.aplica_insumo}" data-crea-repro="${t.crea_evento_reproductivo}">${t.nombre}</option>`
+  ).join('');
+}
+function buildInsumoOpts() {
+  return '<option value="">— Insumo —</option>' + INSUMOS.map(i => `<option value="${i.id}">${i.nombre}</option>`).join('');
+}
+function buildViaOpts() {
+  return '<option value="">— Vía —</option>' + VIA_CHOICES.map(v => `<option value="${v.val}">${v.label}</option>`).join('');
+}
 
-  $(function () {
+function buildPadreOpts() {
+  return '<option value="">— Padre / Toro —</option>' + PADRES.map(p => `<option value="${p.id}">${p.nombre} (${p.codigo})</option>`).join('');
+}
 
-    // ============================================================
-    // MODAL 1 — Agregar desde rodeo
-    // ============================================================
-    var $modalRodeo = $("#modalAgregarDesdeRodeo");
-    var $tbodyRodeo = $("#tbody-rodeo");
-    var $contador   = $("#contador-seleccionados");
-    var $checkAll   = $("#check-all-rodeo");
+function initModal(modalId, tipos, tbodyId, filaVaciaId, badgeClass) {
+  const $m    = $(`#${modalId}`);
+  const $sel  = $m.find(".sel-tipo");
+  const $btn  = $m.find(".btn-guardar-ev");
+  const $err  = $m.find(".ev-error");
+  const $padre = $m.find(".row-padre");
 
-    // Carga los animales del rodeo al abrir el modal
-    $modalRodeo.on("shown.bs.modal", function () {
-      cargarAnimalesRodeo();
-    });
+  $sel.html(buildTipoOpts(tipos));
+  $m.find(".sel-insumo").html(buildInsumoOpts());
+  $m.find(".sel-via").html(buildViaOpts());
+  if ($padre.length) $m.find(".sel-padre").html(buildPadreOpts());
 
-    function cargarAnimalesRodeo() {
-      $tbodyRodeo.html('<tr><td colspan="7" class="text-center text-muted py-4">Cargando animales del rodeo…</td></tr>');
+  function toggleCampos() {
+    const $opt       = $sel.find("option:selected");
+    const aplica     = $opt.data("insumo") === true || $opt.data("insumo") == "True";
+    const creaRepro  = $opt.data("crea-repro") === true || $opt.data("crea-repro") == "True";
+    $m.find(".row-insumo, .row-dosis, .row-via").toggleClass("d-none", !aplica);
+    if ($padre.length) $padre.toggleClass("d-none", !creaRepro);
+  }
 
-      $.ajax({
-        url:  URL_ANIMALES_RODEO,
-        type: "GET",
-        dataType: "json",
-        success: function (data) {
-          renderAnimalesRodeo(data.animales);
-        },
-        error: function () {
-          $tbodyRodeo.html('<tr><td colspan="7" class="text-center text-danger py-4">Error al cargar animales.</td></tr>');
-        }
-      });
-    }
+  $sel.on("change", toggleCampos);
+  toggleCampos();
 
-    function renderAnimalesRodeo(animales) {
-      if (!animales || animales.length === 0) {
-        $tbodyRodeo.html('<tr><td colspan="7" class="text-center text-muted py-4">No hay animales disponibles en este rodeo.</td></tr>');
-        actualizarContador();
-        return;
-      }
+  // Poblar grilla de vacas
+  const $grilla = $m.find(".grilla-vacas");
+  const $count  = $m.find(".sel-count");
 
-      var html = "";
-      $.each(animales, function (i, a) {
-        var rowClass = a.cumple_filtros ? "" : "table-danger";
-        var motivos  = a.motivos_no_cumple && a.motivos_no_cumple.length
-                       ? a.motivos_no_cumple.join(", ")
-                       : "Cumple filtros";
+  function actualizarCount() {
+    $count.text($grilla.find(".vaca-chip.sel").length);
+  }
 
-        html += '<tr class="' + rowClass + '">';
-        html += '<td><div class="form-check form-check-flat mt-0"><label class="form-check-label">';
-        html += '<input type="checkbox" class="form-check-input chk-animal" '
-             +  'data-animal-id="' + a.id + '" '
-             +  'data-cumple="' + (a.cumple_filtros ? "1" : "0") + '">';
-        html += '<i class="input-helper"></i></label></div></td>';
-        html += '<td><h6 class="mb-0">' + (a.identificador || "—") + '</h6>'
-             +  '<p class="mb-0 text-muted small">' + (a.nombre_apodo || "") + '</p></td>';
-        html += '<td>' + (a.categoria || "—") + '</td>';
-        html += '<td>' + (a.edad_display || "—") + '</td>';
-        html += '<td>' + (a.ultimo_peso != null ? a.ultimo_peso + " kg" : "—") + '</td>';
-        html += '<td>' + (a.estado_reproductivo || "—") + '</td>';
-        html += '<td><small>' + motivos + '</small></td>';
-        html += '</tr>';
-      });
+  if (MIEMBROS.length) {
+    $grilla.html(MIEMBROS.map(a =>
+      `<div class="vaca-chip sel" data-animal-id="${a.id}">
+        <i class="mdi mdi-cow vaca-ico"></i>
+        <div class="vaca-num">${a.caravana}</div>
+        <div class="vaca-check"><svg width="8" height="6" viewBox="0 0 8 6"><polyline points="1,3 3,5 7,1" stroke="white" stroke-width="1.5" fill="none"/></svg></div>
+      </div>`
+    ).join(""));
+    actualizarCount();
+  } else {
+    $grilla.html('<p class="text-muted small text-center w-100 py-2">Sin animales activos en el grupo.</p>');
+  }
 
-      $tbodyRodeo.html(html);
-      actualizarContador();
-    }
-
-    // Check all
-    $checkAll.on("change", function () {
-      $tbodyRodeo.find(".chk-animal").prop("checked", $(this).is(":checked"));
-      actualizarContador();
-    });
-
-    // Cambio individual
-    $tbodyRodeo.on("change", ".chk-animal", function () {
-      actualizarContador();
-    });
-
-    function actualizarContador() {
-      var n = $tbodyRodeo.find(".chk-animal:checked").length;
-      $contador.text(n + " seleccionado" + (n === 1 ? "" : "s"));
-    }
-
-    // Agregar seleccionados
-    $("#btn-agregar-seleccionados").on("click", function () {
-      var $seleccionados = $tbodyRodeo.find(".chk-animal:checked");
-      if ($seleccionados.length === 0) {
-        alert("No seleccionaste ningún animal.");
-        return;
-      }
-
-      // Verificamos si alguno no cumple filtros
-      var noCumplen = $seleccionados.filter('[data-cumple="0"]').length;
-      if (noCumplen > 0) {
-        var msg = "Hay " + noCumplen + " animal(es) que NO cumplen los filtros del grupo. "
-                + "¿Querés agregarlos igual?";
-        if (!confirm(msg)) return;
-      }
-
-      var ids = $seleccionados.map(function () {
-        return $(this).data("animal-id");
-      }).get();
-
-      agregarMiembros(ids);
-    });
-
-    function agregarMiembros(ids) {
-      $.ajax({
-        url:  URL_AGREGAR_MIEMBROS,
-        type: "POST",
-        data: {
-          animal_ids: ids.join(","),
-          csrfmiddlewaretoken: CSRF_TOKEN
-        },
-        dataType: "json",
-        success: function (data) {
-          if (data.ok) {
-            alert("Se agregaron " + data.agregados + " animal(es) al grupo.");
-            location.reload();
-          } else {
-            alert("Error: " + (data.error || "no se pudo agregar."));
-          }
-        },
-        error: function () {
-          alert("Error de comunicación al agregar miembros.");
-        }
-      });
-    }
-
-
-    // ============================================================
-    // MODAL 2 — Buscar animal individual
-    // ============================================================
-    var $inputBuscar = $("#input-buscar-animal");
-    var $tbodyBuscar = $("#tbody-buscar");
-    var timerBuscar  = null;
-
-    $inputBuscar.on("input", function () {
-      var q = $(this).val().trim();
-      clearTimeout(timerBuscar);
-
-      if (q.length < 2) {
-        $tbodyBuscar.html('<tr><td colspan="5" class="text-center text-muted py-4">Escribí al menos 2 caracteres.</td></tr>');
-        return;
-      }
-
-      timerBuscar = setTimeout(function () { buscarAnimal(q); }, 300);
-    });
-
-    function buscarAnimal(q) {
-      $tbodyBuscar.html('<tr><td colspan="5" class="text-center text-muted py-4">Buscando…</td></tr>');
-
-      $.ajax({
-        url:  URL_BUSCAR_ANIMAL,
-        type: "GET",
-        data: { q: q },
-        dataType: "json",
-        success: function (data) {
-          renderResultadosBusqueda(data.animales);
-        },
-        error: function () {
-          $tbodyBuscar.html('<tr><td colspan="5" class="text-center text-danger py-4">Error en la búsqueda.</td></tr>');
-        }
-      });
-    }
-
-    function renderResultadosBusqueda(animales) {
-      if (!animales || animales.length === 0) {
-        $tbodyBuscar.html('<tr><td colspan="5" class="text-center text-muted py-4">Sin resultados.</td></tr>');
-        return;
-      }
-
-      var html = "";
-      $.each(animales, function (i, a) {
-        var accion = a.ya_es_miembro
-          ? '<span class="badge badge-opacity-success">Ya es miembro</span>'
-          : '<button type="button" class="btn btn-sm btn-primary text-white btn-agregar-uno" '
-            + 'data-animal-id="' + a.id + '"><i class="mdi mdi-plus"></i> Agregar</button>';
-
-        html += '<tr>';
-        html += '<td><h6 class="mb-0">' + (a.identificador || "—") + '</h6>'
-             +  '<p class="mb-0 text-muted small">' + (a.nombre_apodo || "") + '</p></td>';
-        html += '<td>' + (a.rodeo || "—") + '</td>';
-        html += '<td>' + (a.categoria || "—") + '</td>';
-        html += '<td>' + (a.edad_display || "—") + '</td>';
-        html += '<td class="text-end">' + accion + '</td>';
-        html += '</tr>';
-      });
-      $tbodyBuscar.html(html);
-    }
-
-    $tbodyBuscar.on("click", ".btn-agregar-uno", function () {
-      var animalId = $(this).data("animal-id");
-      agregarMiembros([animalId]);
-    });
-
-
-    // ============================================================
-    // Quitar miembro
-    // ============================================================
-    $("#tbody-miembros").on("click", ".btn-quitar-miembro", function () {
-      var miembroId = $(this).data("miembro-id");
-      if (!confirm("¿Confirmás quitar este animal del grupo?")) return;
-
-      $.ajax({
-        url:  URL_QUITAR_MIEMBRO,
-        type: "POST",
-        data: {
-          miembro_id: miembroId,
-          motivo: "CAMBIO_LOTE",
-          csrfmiddlewaretoken: CSRF_TOKEN
-        },
-        dataType: "json",
-        success: function (data) {
-          if (data.ok) {
-            location.reload();
-          } else {
-            alert("Error: " + (data.error || "no se pudo quitar."));
-          }
-        },
-        error: function () {
-          alert("Error de comunicación.");
-        }
-      });
-    });
-
+  $grilla.on("click", ".vaca-chip", function() {
+    $(this).toggleClass("sel desel");
+    actualizarCount();
   });
+
+  $m.find(".btn-sel-todos").on("click", () => {
+    $grilla.find(".vaca-chip").removeClass("desel").addClass("sel");
+    actualizarCount();
+  });
+  $m.find(".btn-desel-todos").on("click", () => {
+    $grilla.find(".vaca-chip").removeClass("sel").addClass("desel");
+    actualizarCount();
+  });
+
+  $m.on("hidden.bs.modal", function() {
+    $m.find("input[type=text], input[type=date], textarea").val("");
+    $sel.val(""); $m.find(".sel-insumo, .sel-via, .sel-padre").val("");
+    $grilla.find(".vaca-chip").removeClass("desel").addClass("sel");
+    actualizarCount();
+    $err.addClass("d-none").text("");
+    toggleCampos();
+  });
+
+  $btn.on("click", function() {
+    const fecha  = $m.find(".inp-fecha").val();
+    const tipoId = $sel.val();
+    if (!fecha || !tipoId) { $err.text("Completá fecha y tipo.").removeClass("d-none"); return; }
+    const $opt      = $sel.find("option:selected");
+    const aplica    = !!$opt.data("insumo");
+    const creaRepro = !!$opt.data("crea-repro");
+    const padreId   = $m.find(".sel-padre").val();
+    if (creaRepro && !padreId) { $err.text("Seleccioná el padre genético o toro.").removeClass("d-none"); return; }
+    const selIds = $grilla.find(".vaca-chip.sel").map(function(){ return $(this).data("animal-id"); }).get().join(",");
+    if (!selIds) { $err.text("Seleccioná al menos un animal.").removeClass("d-none"); return; }
+    $btn.prop("disabled", true);
+    $.ajax({
+      url: URL_AGREGAR_EVENTO, type: "POST",
+      data: {
+        tipo:           tipoId,
+        fecha:          fecha,
+        insumo:         aplica    ? $m.find(".sel-insumo").val() : "",
+        dosis:          aplica    ? $m.find(".inp-dosis").val()  : "",
+        via_admin:      aplica    ? $m.find(".sel-via").val()    : "",
+        padre_genetico: creaRepro ? padreId : "",
+        animal_ids:     selIds,
+        csrfmiddlewaretoken: CSRF_TOKEN
+      },
+      dataType: "json",
+      success: function(data) {
+        if (data.ok) {
+          const ev = data.evento;
+          $(`#${filaVaciaId}`).remove();
+          $(`#${tbodyId}`).append(`
+            <tr data-evento-id="${ev.id}">
+              <td>${ev.fecha}</td>
+              <td><span class="badge ${badgeClass}">${ev.tipo}</span></td>
+              <td>${ev.insumo}</td><td>${ev.dosis}</td><td>${ev.via_admin}</td>
+              <td class="text-end">
+                <button class="btn btn-sm btn-otline-dark btn-eliminar-evento" data-evento-id="${ev.id}">
+                  <i class="mdi mdi-delete-outline"></i>
+                </button>
+              </td>
+            </tr>`);
+          $m.modal("hide");
+        } else {
+          const msg = Object.values(data.errors || {}).flat().join(" ") || "Error al guardar.";
+          $err.text(msg).removeClass("d-none");
+        }
+      },
+      error: () => $err.text("Error de comunicación.").removeClass("d-none"),
+      complete: () => $btn.prop("disabled", false),
+    });
+  });
+}
+
+$(document).on("click", ".btn-eliminar-evento", function() {
+  const id = $(this).data("evento-id");
+  if (!confirm("¿Eliminar este evento?")) return;
+  const $f = $(this).closest("tr");
+  $.post(URL_ELIMINAR_EVENTO + id + "/", { csrfmiddlewaretoken: CSRF_TOKEN }, function(d) {
+    if (d.ok) $f.remove();
+  }, "json");
+});
+
+$("#tbody-miembros").on("click", ".btn-quitar-miembro", function() {
+  if (!confirm("¿Confirmás quitar este animal?")) return;
+  $.post(URL_QUITAR_MIEMBRO,
+    { miembro_id: $(this).data("miembro-id"), motivo: "CAMBIO_LOTE", csrfmiddlewaretoken: CSRF_TOKEN },
+    d => { if (d.ok) location.reload(); else alert(d.error); }, "json");
+});
+
+$("#modalAgregarDesdeRodeo").on("shown.bs.modal", function() {
+  const $tb = $("#tbody-rodeo");
+  $tb.html('<tr><td colspan="7" class="text-center text-muted py-4">Cargando…</td></tr>');
+  $.getJSON(URL_ANIMALES_RODEO, function(data) {
+    if (!data.animales || !data.animales.length) {
+      $tb.html('<tr><td colspan="7" class="text-center text-muted py-4">Sin animales disponibles.</td></tr>');
+      return;
+    }
+    $tb.html(data.animales.map(a => `
+      <tr class="${a.cumple_filtros ? '' : 'table-danger'}">
+        <td><div class="form-check form-check-flat mt-0"><label class="form-check-label">
+          <input type="checkbox" class="form-check-input chk-animal"
+            data-animal-id="${a.id}" data-cumple="${a.cumple_filtros ? 1 : 0}">
+          <i class="input-helper"></i></label></div></td>
+        <td><h6 class="mb-0">${a.identificador||"—"}</h6><small>${a.nombre_apodo||""}</small></td>
+        <td>${a.categoria||"—"}</td><td>${a.edad_display||"—"}</td>
+        <td>${a.ultimo_peso != null ? a.ultimo_peso+' kg' : "—"}</td>
+        <td>${a.estado_reproductivo||"—"}</td>
+        <td><small>${(a.motivos_no_cumple||[]).join(", ")||"Cumple filtros"}</small></td>
+      </tr>`).join(""));
+    updateContador();
+  });
+});
+
+function updateContador() {
+  const n = $("#tbody-rodeo .chk-animal:checked").length;
+  $("#contador-seleccionados").text(n + " seleccionado" + (n===1?"":"s"));
+}
+$("#check-all-rodeo").on("change", function() {
+  $("#tbody-rodeo .chk-animal").prop("checked", $(this).is(":checked")); updateContador();
+});
+$(document).on("change", "#tbody-rodeo .chk-animal", updateContador);
+
+$("#btn-agregar-seleccionados").on("click", function() {
+  const $sel = $("#tbody-rodeo .chk-animal:checked");
+  if (!$sel.length) { alert("No seleccionaste ningún animal."); return; }
+  const nc = $sel.filter('[data-cumple="0"]').length;
+  if (nc && !confirm(nc + " animal(es) no cumplen los filtros. ¿Agregar igual?")) return;
+  agregarMiembros($sel.map(function(){ return $(this).data("animal-id"); }).get());
+});
+
+let timerBuscar;
+$("#input-buscar-animal").on("input", function() {
+  const q = $(this).val().trim();
+  clearTimeout(timerBuscar);
+  if (q.length < 2) { $("#tbody-buscar").html('<tr><td colspan="5" class="text-center text-muted py-4">Escribí al menos 2 caracteres.</td></tr>'); return; }
+  timerBuscar = setTimeout(() => {
+    $.getJSON(URL_BUSCAR_ANIMAL, { q }, function(data) {
+      const html = (data.animales||[]).map(a => `
+        <tr>
+          <td><h6 class="mb-0">${a.identificador||"—"}</h6><small>${a.nombre_apodo||""}</small></td>
+          <td>${a.rodeo||"—"}</td><td>${a.categoria||"—"}</td><td>${a.edad_display||"—"}</td>
+          <td class="text-end">${a.ya_es_miembro
+            ? '<span class="badge badge-opacity-success">Ya es miembro</span>'
+            : `<button class="btn btn-sm btn-primary text-white btn-agregar-uno" data-animal-id="${a.id}"><i class="mdi mdi-plus"></i> Agregar</button>`
+          }</td>
+        </tr>`).join("");
+      $("#tbody-buscar").html(html || '<tr><td colspan="5" class="text-center text-muted py-4">Sin resultados.</td></tr>');
+    });
+  }, 300);
+});
+
+$(document).on("click", ".btn-agregar-uno", function() { agregarMiembros([$(this).data("animal-id")]); });
+
+function agregarMiembros(ids) {
+  $.post(URL_AGREGAR_MIEMBROS, { animal_ids: ids.join(","), csrfmiddlewaretoken: CSRF_TOKEN }, function(d) {
+    if (d.ok) { alert(d.agregados + " animal(es) agregado(s)."); location.reload(); } else alert(d.error);
+  }, "json");
+}
+
+$(function() {
+  initModal("modalEventoRepro",    TIPOS_REPRO, "tbody-eventos-repro", "fila-sin-repro", "badge-opacity-success");
+  initModal("modalEventoSanidad",  TIPOS_SANIT, "tbody-eventos-sanit", "fila-sin-sanit", "badge-opacity-warning");
+});
 </script>
 {% endblock %}

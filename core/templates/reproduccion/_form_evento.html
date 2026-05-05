@@ -1,0 +1,45 @@
+{# Partial reutilizable para el formulario de evento en los modales.
+   Variables esperadas: categoria (REPRO|SANIT), tbody_id, fila_vacia_id, badge_class
+#}
+<form id="form-evento-{{ categoria }}">
+  <div class="row g-3">
+    <div class="col-md-4">
+      <label class="form-label">Fecha <span class="text-danger">*</span></label>
+      <input type="date" class="form-control inp-fecha" required>
+    </div>
+    <div class="col-md-8">
+      <label class="form-label">Tipo de evento <span class="text-danger">*</span></label>
+      <select class="form-select sel-tipo" required>
+        <option value="">— Tipo de evento —</option>
+      </select>
+    </div>
+
+    <div class="col-md-6 row-insumo d-none">
+      <label class="form-label">Insumo</label>
+      <select class="form-select sel-insumo">
+        <option value="">— Insumo —</option>
+      </select>
+    </div>
+    <div class="col-md-3 row-dosis d-none">
+      <label class="form-label">Dosis</label>
+      <input type="text" class="form-control inp-dosis" placeholder="Ej: 2 ml">
+    </div>
+    <div class="col-md-3 row-via d-none">
+      <label class="form-label">Vía</label>
+      <select class="form-select sel-via"></select>
+    </div>
+
+    <div class="col-12">
+      <label class="form-label">Observaciones</label>
+      <textarea class="form-control inp-obs" rows="2"></textarea>
+    </div>
+  </div>
+  <div class="alert alert-danger mt-3 d-none ev-error"></div>
+</form>
+
+<div class="modal-footer px-0 pb-0 pt-3 mt-3 border-top">
+  <button type="button" class="btn btn-otline-dark" data-bs-dismiss="modal">Cancelar</button>
+  <button type="button" class="btn btn-primary text-white btn-guardar-ev">
+    <i class="mdi mdi-check"></i> Guardar
+  </button>
+</div>

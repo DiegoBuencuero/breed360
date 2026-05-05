@@ -18,6 +18,10 @@ from gestion_bovinos.views import (
     ajax_agregar_miembros,
     ajax_quitar_miembro,
 
+    ajax_agregar_evento_grupo,
+    ajax_eliminar_evento_grupo,
+    vista_diagnostico_grupo,
+
     vista_lista_bovinos,
     vista_crear_bovino,
     vista_editar_bovino,
@@ -56,6 +60,9 @@ urlpatterns = [
     path("grupos/<int:pk>/ajax/buscar/", ajax_buscar_animal_para_grupo, name="ajax_buscar_animal_para_grupo"),
     path("grupos/<int:pk>/ajax/agregar-miembros/", ajax_agregar_miembros, name="ajax_agregar_miembros"),
     path("grupos/<int:pk>/ajax/quitar-miembro/", ajax_quitar_miembro, name="ajax_quitar_miembro"),
+    path("grupos/<int:pk>/ajax/agregar-evento/", ajax_agregar_evento_grupo, name="ajax_agregar_evento_grupo"),
+    path("grupos/<int:pk>/ajax/eliminar-evento/<int:evento_pk>/", ajax_eliminar_evento_grupo, name="ajax_eliminar_evento_grupo"),
+    path("grupos/<int:pk>/diagnostico/", vista_diagnostico_grupo, name="vista_diagnostico_grupo"),
 
     # Bovinos
     path("bovinos/", vista_lista_bovinos, name="vista_lista_bovinos"),

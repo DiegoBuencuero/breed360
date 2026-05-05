@@ -324,21 +324,27 @@
         </div>
 
         <ul class="nav nav-pills mb-4" id="animalTab" role="tablist">
-            <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#resumen"     type="button">{% translate "Resumen" %}</button></li>
-            <li class="nav-item"><button class="nav-link"        data-bs-toggle="pill" data-bs-target="#genealogia"  type="button">{% translate "Genealogía" %}</button></li>
-            <li class="nav-item"><button class="nav-link"        data-bs-toggle="pill" data-bs-target="#mediciones"  type="button">{% translate "Mediciones" %}</button></li>
-            <li class="nav-item"><button class="nav-link"        data-bs-toggle="pill" data-bs-target="#sanidad"     type="button">{% translate "Sanidad" %}</button></li>
-            <li class="nav-item"><button class="nav-link"        data-bs-toggle="pill" data-bs-target="#alimentacion"type="button">{% translate "Alimentación" %}</button></li>
-            <li class="nav-item"><button class="nav-link"        data-bs-toggle="pill" data-bs-target="#breedplan"   type="button">{% translate "Breedplan" %}</button></li>
+            <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#resumen"      type="button">{% translate "Resumen" %}</button></li>
+            <li class="nav-item"><button class="nav-link"        data-bs-toggle="pill" data-bs-target="#reproduccion" type="button">
+                {% translate "Reproducción" %}
+                {% if eventos_como_madre %}<span class="badge bg-success ms-1">{{ eventos_como_madre|length }}</span>{% endif %}
+            </button></li>
+            <li class="nav-item"><button class="nav-link"        data-bs-toggle="pill" data-bs-target="#sanidad"      type="button">
+                {% translate "Sanidad" %}
+                {% if sanitarios %}<span class="badge bg-warning text-dark ms-1">{{ sanitarios|length }}</span>{% endif %}
+            </button></li>
+            <li class="nav-item"><button class="nav-link"        data-bs-toggle="pill" data-bs-target="#genealogia"   type="button">{% translate "Genealogía" %}</button></li>
+            <li class="nav-item"><button class="nav-link"        data-bs-toggle="pill" data-bs-target="#mediciones"   type="button">{% translate "Mediciones" %}</button></li>
+            <li class="nav-item"><button class="nav-link"        data-bs-toggle="pill" data-bs-target="#breedplan"    type="button">{% translate "Breedplan" %}</button></li>
         </ul>
 
         <div class="tab-content" id="animalTabContent">
-            <div class="tab-pane fade show active" id="resumen"     role="tabpanel">{% include "detalle_bovinos/_resumen.html" %}</div>
-            <div class="tab-pane fade"             id="genealogia"  role="tabpanel">{% include "detalle_bovinos/_genealogia.html" %}</div>
-            <div class="tab-pane fade"             id="mediciones"  role="tabpanel">{% include "detalle_bovinos/_medicion.html" %}</div>
-            <div class="tab-pane fade"             id="sanidad"     role="tabpanel">{% include "detalle_bovinos/_sanidad.html" %}</div>
-            <div class="tab-pane fade"             id="alimentacion"role="tabpanel">{% include "detalle_bovinos/_alimentacion.html" %}</div>
-            <div class="tab-pane fade"             id="breedplan"   role="tabpanel">{% include "detalle_bovinos/_breedplan.html" %}</div>
+            <div class="tab-pane fade show active" id="resumen"      role="tabpanel">{% include "detalle_bovinos/_resumen.html" %}</div>
+            <div class="tab-pane fade"             id="reproduccion" role="tabpanel">{% include "detalle_bovinos/_reproduccion.html" %}</div>
+            <div class="tab-pane fade"             id="sanidad"      role="tabpanel">{% include "detalle_bovinos/_sanidad.html" %}</div>
+            <div class="tab-pane fade"             id="genealogia"   role="tabpanel">{% include "detalle_bovinos/_genealogia.html" %}</div>
+            <div class="tab-pane fade"             id="mediciones"   role="tabpanel">{% include "detalle_bovinos/_medicion.html" %}</div>
+            <div class="tab-pane fade"             id="breedplan"    role="tabpanel">{% include "detalle_bovinos/_breedplan.html" %}</div>
         </div>
 
     </div>

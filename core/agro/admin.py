@@ -37,6 +37,8 @@ class GrupoServicioAdmin(admin.ModelAdmin):
     list_display = (
         "nombre",
         "establecimiento",
+        "manejo",
+        "orden_tanda",
         "tipo_servicio",
         "fecha_inicio",
         "estado",

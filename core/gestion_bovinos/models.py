@@ -91,7 +91,58 @@ class SubRaza(ControlModel):
  
     def __str__(self):
         return f"{self.raza} - {self.nombre}"
- 
+
+
+class TipoInsumo(models.TextChoices):
+    HORMONA         = "HORMONA",         _("Hormona")
+    ANTIPARASITARIO = "ANTIPARASITARIO", _("Antiparasitario")
+    VACUNA          = "VACUNA",          _("Vacuna")
+    ANTIBIOTICO     = "ANTIBIOTICO",     _("Antibiótico")
+    OTRO            = "OTRO",            _("Otro")
+
+
+class Insumo(BaseCatalogo):
+    tipo = models.CharField(_("Tipo"), max_length=20, choices=TipoInsumo.choices, default=TipoInsumo.OTRO)
+
+    class Meta(BaseCatalogo.Meta):
+        verbose_name        = _("Insumo")
+        verbose_name_plural = _("Insumos")
+
+
+class CategoriaEvento(models.TextChoices):
+    REPRODUCTIVO   = "REPRODUCTIVO",   _("Reproductivo")
+    SANITARIO      = "SANITARIO",      _("Sanitario")
+    PRODUCTIVO     = "PRODUCTIVO",     _("Productivo")
+    MANEJO         = "MANEJO",         _("Manejo")
+    ADMINISTRATIVO = "ADMINISTRATIVO", _("Administrativo")
+
+
+class TipoEventoReproductivo(models.TextChoices):
+    INSEMINACION     = "INSEMINACION",     _("Inseminación")
+    SERVICIO_NATURAL = "SERVICIO_NATURAL", _("Servicio natural")
+
+
+class TipoEvento(BaseCatalogo):
+    categoria                = models.CharField(_("Categoría"), max_length=20, choices=CategoriaEvento.choices)
+    aplica_insumo            = models.BooleanField(
+        _("Aplica insumo"), default=False,
+        help_text=_("Indica si este tipo de evento requiere registrar un producto y dosis."),
+    )
+    crea_evento_reproductivo = models.BooleanField(
+        _("Crea evento reproductivo por animal"), default=False,
+        help_text=_("Si activo, al registrar este evento en el grupo crea un EventoReproductivo para cada vaca."),
+    )
+    tipo_evento_reproductivo = models.CharField(
+        _("Tipo de evento reproductivo"), max_length=20,
+        choices=TipoEventoReproductivo.choices,
+        blank=True, null=True,
+        help_text=_("Solo aplica si 'Crea evento reproductivo' está activo."),
+    )
+
+    class Meta(BaseCatalogo.Meta):
+        verbose_name        = _("Tipo de evento")
+        verbose_name_plural = _("Tipos de evento")
+
 
 # =========================================================
 # CHOICES
@@ -120,6 +171,22 @@ class MotivoEgresoMiembro(models.TextChoices):
     OTRO        = "OTRO",        _("Otro")
 
 
+class EstadoManejoReproductivo(models.TextChoices):
+    PLANIFICADO  = "PLANIFICADO",  _("Planificado")
+    EN_CURSO     = "EN_CURSO",     _("En curso")
+    DX_PENDIENTE = "DX_PENDIENTE", _("Diagnóstico pendiente")
+    CERRADO      = "CERRADO",      _("Cerrado")
+
+
+class ViaAdministracion(models.TextChoices):
+    IM       = "IM",       _("Intramuscular")
+    SC       = "SC",       _("Subcutánea")
+    EV       = "EV",       _("Endovenosa")
+    ORAL     = "ORAL",     _("Oral")
+    IMPLANTE = "IMPLANTE", _("Implante")
+    OTRO     = "OTRO",     _("Otro")
+
+
 # =========================================================
 # GRUPO DE SERVICIO
 # =========================================================
@@ -134,6 +201,15 @@ class GrupoServicio(ControlModel):
         on_delete=models.PROTECT, related_name="grupos_servicio",
         blank=True, null=True,
         help_text=_("Rodeo desde el cual se pueden cargar animales rápidamente. Opcional."),
+    )
+    manejo                = models.ForeignKey(
+        'ManejoReproductivo', verbose_name=_("Manejo reproductivo"),
+        on_delete=models.SET_NULL, related_name="grupos",
+        blank=True, null=True,
+    )
+    orden_tanda           = models.PositiveSmallIntegerField(
+        _("Orden / tanda"), default=1,
+        help_text=_("1 = primera IA, 2 = segunda IA, 3 = repaso"),
     )
     nombre                = models.CharField(_("Nombre"), max_length=150)
     tipo_servicio         = models.CharField(
@@ -345,6 +421,113 @@ class MiembroGrupoServicio(ControlModel):
         self.full_clean()
         super().save(*args, **kwargs)
 
+
+# =========================================================
+# EVENTO DE GRUPO DE SERVICIO
+# =========================================================
+
+class EventoGrupoServicio(ControlModel):
+    """
+    Cualquier evento que ocurre sobre un grupo de servicio
+    (sincronización, retiro de dispositivo, revisión, etc.).
+    El tipo determina si se requiere insumo y dosis.
+    """
+    grupo_servicio = models.ForeignKey(
+        GrupoServicio, verbose_name=_("Grupo de servicio"),
+        on_delete=models.CASCADE, related_name="eventos",
+    )
+    tipo           = models.ForeignKey(
+        TipoEvento, verbose_name=_("Tipo de evento"),
+        on_delete=models.PROTECT, related_name="eventos",
+    )
+    fecha          = models.DateField(_("Fecha"))
+    insumo         = models.ForeignKey(
+        Insumo, verbose_name=_("Insumo"),
+        on_delete=models.PROTECT, related_name="eventos_grupo",
+        blank=True, null=True,
+    )
+    dosis          = models.CharField(_("Dosis"), max_length=50, blank=True, null=True)
+    via_admin      = models.CharField(
+        _("Vía de administración"), max_length=10,
+        choices=ViaAdministracion.choices,
+        blank=True, null=True,
+    )
+    padre_genetico = models.ForeignKey(
+        'PadreGenetico', verbose_name=_("Padre genético / Toro"),
+        on_delete=models.PROTECT, related_name="eventos_grupo",
+        blank=True, null=True,
+        help_text=_("Requerido para eventos de IA y Repaso."),
+    )
+    observaciones  = models.TextField(_("Observaciones"), blank=True, null=True)
+
+    class Meta:
+        verbose_name        = _("Evento de grupo de servicio")
+        verbose_name_plural = _("Eventos de grupo de servicio")
+        ordering            = ["fecha", "-id"]
+
+    def __str__(self):
+        return f"{self.grupo_servicio.nombre} — {self.tipo} — {self.fecha}"
+
+    def clean(self):
+        errors = {}
+        if self.tipo_id and self.tipo.aplica_insumo and not self.insumo_id:
+            errors["insumo"] = _("Este tipo de evento requiere indicar un insumo.")
+        if self.tipo_id and self.tipo.crea_evento_reproductivo and not self.padre_genetico_id:
+            errors["padre_genetico"] = _("Este tipo de evento (IA / Repaso) requiere indicar el padre genético o toro.")
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
+# =========================================================
+# APLICACIÓN DE INSUMO POR ANIMAL
+# =========================================================
+
+class AplicacionInsumoAnimal(ControlModel):
+    """
+    Registro individual que cada vaca tiene de una aplicación hormonal
+    originada en un EventoGrupoServicio.
+    Permite ver en la ficha del animal todas las hormonas que recibió.
+    """
+    evento_grupo = models.ForeignKey(
+        EventoGrupoServicio, verbose_name=_("Evento de grupo"),
+        on_delete=models.CASCADE, related_name="aplicaciones_animales",
+    )
+    animal       = models.ForeignKey(
+        'AnimalBovino', verbose_name=_("Animal"),
+        on_delete=models.PROTECT, related_name="aplicaciones_insumo",
+    )
+
+    class Meta:
+        verbose_name        = _("Aplicación de insumo por animal")
+        verbose_name_plural = _("Aplicaciones de insumo por animal")
+        ordering            = ["-evento_grupo__fecha"]
+        constraints         = [
+            models.UniqueConstraint(
+                fields=["evento_grupo", "animal"],
+                name="aplicacion_unica_por_evento_animal",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.animal} — {self.evento_grupo.tipo} — {self.evento_grupo.fecha}"
+
+    @property
+    def fecha(self):
+        return self.evento_grupo.fecha
+
+    @property
+    def insumo(self):
+        return self.evento_grupo.insumo
+
+    @property
+    def dosis(self):
+        return self.evento_grupo.dosis
+
+
 # =========================================================
 # MOTIVO DE CAMBIO DE CATEGORÍA
 # =========================================================
@@ -441,7 +624,45 @@ class Rodeo(ControlModel):
  
     def __str__(self):
         return f"{self.establecimiento} — {self.nombre}"
- 
+
+
+# =========================================================
+# MANEJO REPRODUCTIVO
+# =========================================================
+
+class ManejoReproductivo(ControlModel):
+    """
+    Ciclo reproductivo completo de un rodeo en una temporada.
+    Agrupa las tandas de servicio y el diagnóstico de preñez.
+    """
+    rodeo         = models.ForeignKey(
+        Rodeo, verbose_name=_("Rodeo"),
+        on_delete=models.PROTECT, related_name="manejos_reproductivos",
+    )
+    nombre        = models.CharField(_("Nombre"), max_length=150)
+    anio          = models.PositiveIntegerField(_("Año"))
+    fecha_inicio  = models.DateField(_("Fecha de inicio del servicio"))
+    estado        = models.CharField(
+        _("Estado"), max_length=15,
+        choices=EstadoManejoReproductivo.choices,
+        default=EstadoManejoReproductivo.PLANIFICADO,
+    )
+    observaciones = models.TextField(_("Observaciones"), blank=True, null=True)
+
+    class Meta:
+        verbose_name        = _("Manejo reproductivo")
+        verbose_name_plural = _("Manejos reproductivos")
+        ordering            = ["-anio", "-fecha_inicio"]
+        unique_together     = ("rodeo", "nombre")
+
+    def __str__(self):
+        return f"{self.nombre} ({self.anio})"
+
+    @property
+    def esta_abierto(self):
+        return self.estado in {EstadoManejoReproductivo.PLANIFICADO, EstadoManejoReproductivo.EN_CURSO}
+
+
 class MovimientoRodeo(ControlModel):
     animal        = models.ForeignKey('AnimalBovino', verbose_name=_("Animal"),       on_delete=models.PROTECT, related_name="movimientos_rodeo")
     fecha         = models.DateField(_("Fecha"))
@@ -922,12 +1143,7 @@ class MedicionAnimal(ControlModel):
 # =========================================================
 # EVENTOS REPRODUCTIVOS
 # =========================================================
- 
-class TipoEventoReproductivo(models.TextChoices):
-    INSEMINACION     = "INSEMINACION",     _("Inseminación")
-    SERVICIO_NATURAL = "SERVICIO_NATURAL", _("Servicio natural")
- 
- 
+
 class ResultadoTacto(models.TextChoices):
     PRENADA = "PRENADA", _("Preñada")
     VACIA   = "VACIA",   _("Vacía")
@@ -1100,6 +1316,129 @@ class SugerenciaCambioCategoria(ControlModel):
     def __str__(self):
         return f"{self.animal} → {self.categoria_destino} | {'✓' if self.aceptada else '…'}"
 
+
+# =========================================================
+# DIAGNÓSTICO DE PREÑEZ
+# =========================================================
+
+class MetodoDiagnostico(models.TextChoices):
+    TACTO_RECTAL = "TACTO",     _("Tacto rectal")
+    ECOGRAFIA    = "ECOGRAFIA", _("Ecografía")
+
+
+class ResultadoDiagnostico(models.TextChoices):
+    PRENADA = "PRENADA", _("Preñada")
+    VACIA   = "VACIA",   _("Vacía")
+    DUDOSA  = "DUDOSA",  _("Dudosa")
+
+
+class DestinoVacia(models.TextChoices):
+    VENTA    = "VENTA",    _("Venta inmediata")
+    ENGORDE  = "ENGORDE",  _("Engorde")
+    REPASO   = "REPASO",   _("Repaso — nuevo servicio")
+    DESCARTE = "DESCARTE", _("Descarte")
+
+
+class DiagnosticoPreñezRodeo(ControlModel):
+    """
+    Sesión de diagnóstico de preñez.
+    Puede vincularse directamente a un GrupoServicio o a un ManejoReproductivo.
+    """
+    grupo_servicio = models.ForeignKey(
+        GrupoServicio, verbose_name=_("Grupo de servicio"),
+        on_delete=models.PROTECT, related_name="diagnosticos",
+        blank=True, null=True,
+    )
+    manejo        = models.ForeignKey(
+        ManejoReproductivo, verbose_name=_("Manejo reproductivo"),
+        on_delete=models.PROTECT, related_name="diagnosticos",
+        blank=True, null=True,
+    )
+    fecha         = models.DateField(_("Fecha del diagnóstico"))
+    metodo        = models.CharField(_("Método"), max_length=10, choices=MetodoDiagnostico.choices)
+    veterinario   = models.CharField(_("Veterinario"), max_length=150, blank=True, null=True)
+    observaciones = models.TextField(_("Observaciones"), blank=True, null=True)
+
+    def clean(self):
+        if not self.grupo_servicio_id and not self.manejo_id:
+            raise ValidationError(_("El diagnóstico debe estar vinculado a un grupo de servicio o a un manejo reproductivo."))
+
+    class Meta:
+        verbose_name        = _("Diagnóstico de preñez")
+        verbose_name_plural = _("Diagnósticos de preñez")
+        ordering            = ["-fecha", "-id"]
+
+    def __str__(self):
+        return f"{self.manejo} — {self.get_metodo_display()} — {self.fecha}"
+
+    @property
+    def total_diagnosticadas(self):
+        return self.resultados.count()
+
+    @property
+    def total_prenadas(self):
+        return self.resultados.filter(resultado=ResultadoDiagnostico.PRENADA).count()
+
+    @property
+    def total_vacias(self):
+        return self.resultados.filter(resultado=ResultadoDiagnostico.VACIA).count()
+
+    @property
+    def pct_prenez(self):
+        total = self.total_diagnosticadas
+        return round(100 * self.total_prenadas / total, 1) if total else 0
+
+
+class ResultadoDiagnosticoAnimal(ControlModel):
+    """Resultado individual del tacto/ecografía para cada animal."""
+    diagnostico     = models.ForeignKey(
+        DiagnosticoPreñezRodeo, verbose_name=_("Diagnóstico"),
+        on_delete=models.CASCADE, related_name="resultados",
+    )
+    animal          = models.ForeignKey(
+        AnimalBovino, verbose_name=_("Animal"),
+        on_delete=models.PROTECT, related_name="diagnosticos_prenez",
+    )
+    resultado       = models.CharField(_("Resultado"), max_length=10, choices=ResultadoDiagnostico.choices)
+    meses_gestacion = models.PositiveSmallIntegerField(
+        _("Meses de gestación"), blank=True, null=True,
+        help_text=_("Solo para ecografía"),
+    )
+    destino_vacia   = models.CharField(
+        _("Destino (vacía)"), max_length=10,
+        choices=DestinoVacia.choices,
+        blank=True, null=True,
+    )
+    observaciones   = models.TextField(_("Observaciones"), blank=True, null=True)
+
+    class Meta:
+        verbose_name        = _("Resultado diagnóstico animal")
+        verbose_name_plural = _("Resultados diagnóstico animales")
+        ordering            = ["animal__id"]
+        constraints         = [
+            models.UniqueConstraint(
+                fields=["diagnostico", "animal"],
+                name="resultado_unico_por_diagnostico_animal",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.animal} — {self.get_resultado_display()}"
+
+    def clean(self):
+        errors = {}
+        if self.resultado != ResultadoDiagnostico.VACIA and self.destino_vacia:
+            errors["destino_vacia"] = _("El destino solo aplica a animales vacíos.")
+        if self.meses_gestacion is not None and self.resultado != ResultadoDiagnostico.PRENADA:
+            errors["meses_gestacion"] = _("Los meses de gestación solo aplican a animales preñados.")
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
 # =========================================================
 # SIGNAL — evalúa umbrales al registrar una pesada
 # =========================================================
@@ -1125,3 +1464,60 @@ def evaluar_cambio_categoria(sender, instance, created, **kwargs):
                 categoria_destino=umbral.categoria_destino,
                 defaults={"procesada": False},
             )
+
+
+# =========================================================
+# SIGNAL — actualiza estado reproductivo al registrar tacto
+# =========================================================
+
+@receiver(post_save, sender=ResultadoDiagnosticoAnimal)
+def actualizar_estado_reproductivo_por_diagnostico(sender, instance, created, **kwargs):
+    """
+    Al registrar el resultado individual del tacto/ecografía:
+    1. Actualiza animal.estado_reproductivo.
+    2. Sincroniza resultado_tacto en el EventoReproductivo activo si existe.
+    """
+    codigo_estado = {
+        ResultadoDiagnostico.PRENADA: "PRENADA",
+        ResultadoDiagnostico.VACIA:   "VACIA",
+        ResultadoDiagnostico.DUDOSA:  "DUDOSA",
+    }.get(instance.resultado)
+
+    if codigo_estado:
+        estado = EstadoReproductivo.objects.filter(codigo=codigo_estado).first()
+        if estado:
+            AnimalBovino.objects.filter(pk=instance.animal_id).update(estado_reproductivo=estado)
+
+    evento = (
+        EventoReproductivo.objects
+        .filter(madre=instance.animal, fecha_parto__isnull=True)
+        .order_by("-fecha_servicio")
+        .first()
+    )
+    if evento:
+        mapa = {
+            ResultadoDiagnostico.PRENADA: ResultadoTacto.PRENADA,
+            ResultadoDiagnostico.VACIA:   ResultadoTacto.VACIA,
+            ResultadoDiagnostico.DUDOSA:  ResultadoTacto.DUDOSA,
+        }
+        nuevo = mapa.get(instance.resultado)
+        if nuevo:
+            evento.resultado_tacto = nuevo
+            evento.fecha_tacto     = instance.diagnostico.fecha
+            evento.save(update_fields=["resultado_tacto", "fecha_tacto", "updated_at"])
+
+    # Egreso automático si vacía
+    if instance.resultado == ResultadoDiagnostico.VACIA and instance.diagnostico.grupo_servicio_id:
+        try:
+            instance.diagnostico.grupo_servicio.quitar_animal(
+                instance.animal,
+                motivo=MotivoEgresoMiembro.VACIA,
+                observaciones="Egreso automático por diagnóstico de preñez negativo.",
+            )
+        except Exception:
+            pass
+
+
+# La propagación del evento a animales individuales se hace
+# en la vista ajax_agregar_evento_grupo (ver views.py) para
+# permitir que el usuario seleccione qué animales reciben el evento.

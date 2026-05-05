@@ -25,6 +25,18 @@ from .models import (
     MiembroGrupoServicio,
     MotivoEgresoMiembro,
     SexoBovino,
+    EventoGrupoServicio,
+    TipoEvento,
+    PadreGenetico,
+    AplicacionInsumoAnimal,
+    DiagnosticoPreñezRodeo,
+    ResultadoDiagnosticoAnimal,
+    ResultadoDiagnostico,
+    DestinoVacia,
+    TipoEventoReproductivo,
+    TipoSanitario,
+    TipoInsumo,
+    CategoriaEvento,
 )
 
 from .forms import (
@@ -33,11 +45,40 @@ from .forms import (
     EventoReproductivoForm,
     EstablecimientoForm,
     GrupoServicioForm,
+    EventoGrupoServicioForm,
+    DiagnosticoPreñezRodeoForm,
 )
 
 
 def get_empresa(request):
     return request.user.profile.empresa
+
+
+def _empresa_filter(qs, empresa, field="rodeo__establecimiento__empresa"):
+    """Aplica filtro de empresa solo si está definida."""
+    return qs.filter(**{field: empresa}) if empresa else qs
+
+
+def get_bovino_or_404(pk, empresa=None):
+    qs = AnimalBovino.objects.select_related(
+        "rodeo", "rodeo__establecimiento", "rodeo__establecimiento__empresa",
+        "raza", "subraza", "madre", "padre_genetico",
+        "estado_vida", "categoria_actual", "estado_reproductivo", "destino_productivo",
+    )
+    return get_object_or_404(_empresa_filter(qs, empresa), pk=pk)
+
+
+def get_grupo_or_404(pk, empresa=None):
+    """
+    Devuelve el GrupoServicio o lanza 404.
+    Si empresa no es None filtra por ella; si es None (superadmin) no filtra.
+    """
+    qs = GrupoServicio.objects.select_related(
+        "establecimiento", "rodeo", "padre_genetico"
+    )
+    if empresa:
+        qs = qs.filter(establecimiento__empresa=empresa)
+    return get_object_or_404(qs, pk=pk)
 
 # @login_required
 # def index(request):
@@ -75,110 +116,140 @@ Contiene:
 
 @login_required
 def index(request):
-    hoy = timezone.now().date()
+    from django.db.models import Count
+    hoy       = timezone.now().date()
+    empresa   = get_empresa(request)
+    inicio_año = hoy.replace(month=1, day=1)
+
+    # Base querysets filtrados por empresa
+    bovinos_qs  = _empresa_filter(AnimalBovino.objects.filter(activo=True), empresa)
+    eventos_qs  = _empresa_filter(EventoReproductivo.objects, empresa, "madre__rodeo__establecimiento__empresa")
+    sanitario_qs = _empresa_filter(RegistroSanitario.objects, empresa, "animal__rodeo__establecimiento__empresa")
+    grupos_qs   = _empresa_filter(GrupoServicio.objects, empresa, "establecimiento__empresa")
+
+    # ── KPIs principales ──────────────────────────────────────────
+    total_animales   = bovinos_qs.count()
+    terneros_año     = bovinos_qs.filter(fecha_nacimiento__gte=inicio_año).count()
+    vacas_en_grupo   = bovinos_qs.filter(membresias_grupo__fecha_egreso__isnull=True,
+                                         membresias_grupo__grupo__estado="EN_CURSO").distinct().count()
+    grupos_activos   = grupos_qs.filter(estado="EN_CURSO").count()
+
+    prenadas = eventos_qs.filter(
+        resultado_tacto=ResultadoTacto.PRENADA,
+        fecha_parto__isnull=True,
+    ).count()
+    total_dx = eventos_qs.filter(resultado_tacto__isnull=False).count()
+    pct_prenez = round(100 * prenadas / total_dx, 1) if total_dx > 0 else 0
+
+    tactos_pendientes = eventos_qs.filter(
+        fecha_tacto__isnull=True,
+        fecha_servicio__lte=hoy - timedelta(days=35),
+    ).count()
+    refuerzos_7d = sanitario_qs.filter(
+        requiere_refuerzo=True,
+        fecha_refuerzo__gte=hoy,
+        fecha_refuerzo__lte=hoy + timedelta(days=7),
+    ).count()
 
     kpis = {
-        "total_animales": 0,
-        "delta_animales": "0",
-        "en_servicio": 0,
-        "prenadas": 0,
-        "pct_prenez": 0,
-        "terneros": 0,
-        "tactos_pendientes": 0,
-        "refuerzos_proximos": 0,
-        "variacion_anual": "+0.0%",
+        "total_animales":  total_animales,
+        "vacas_en_grupo":  vacas_en_grupo,
+        "prenadas":        prenadas,
+        "pct_prenez":      pct_prenez,
+        "terneros_año":    terneros_año,
+        "grupos_activos":  grupos_activos,
+        "tactos_pendientes": tactos_pendientes,
+        "refuerzos_7d":    refuerzos_7d,
     }
 
-    try:
-        kpis["total_animales"] = AnimalBovino.objects.filter(activo=True).count()
+    # ── Alertas ───────────────────────────────────────────────────
+    alertas = []
 
-        inicio_anio = hoy.replace(month=1, day=1)
-        kpis["terneros"] = AnimalBovino.objects.filter(
-            activo=True,
-            fecha_nacimiento__gte=inicio_anio,
-        ).count()
-    except Exception:
-        pass
+    if tactos_pendientes:
+        alertas.append({
+            "nivel": "danger", "icono": "mdi-alarm-light-outline",
+            "titulo": f"{tactos_pendientes} animal(es) sin tacto",
+            "detalle": "Llevan más de 35 días desde el servicio sin diagnóstico de preñez.",
+            "link": "/eventos-reproductivos/", "link_texto": "Ver eventos",
+        })
 
-    try:
-        prenadas = EventoReproductivo.objects.filter(
-            es_efectivo=True,
-            resultado_tacto=ResultadoTacto.PRENADA,
-            fecha_parto__isnull=True,
-        ).count()
+    if refuerzos_7d:
+        alertas.append({
+            "nivel": "warning", "icono": "mdi-needle",
+            "titulo": f"{refuerzos_7d} refuerzo(s) sanitario(s) próximos",
+            "detalle": "Vencen dentro de los próximos 7 días.",
+            "link": "#", "link_texto": "Ver sanitarios",
+        })
 
-        en_servicio = EventoReproductivo.objects.filter(
-            fecha_tacto__isnull=True,
-            fecha_servicio__lte=hoy,
-            fecha_servicio__gte=hoy - timedelta(days=60),
-        ).count()
+    sugerencias_pend = SugerenciaCambioCategoria.objects.filter(procesada=False).count()
+    if sugerencias_pend:
+        alertas.append({
+            "nivel": "info", "icono": "mdi-tag-multiple-outline",
+            "titulo": f"{sugerencias_pend} sugerencia(s) de recategorización",
+            "detalle": "Animales que alcanzaron los umbrales para cambiar de categoría.",
+            "link": "#", "link_texto": "Revisar",
+        })
 
-        kpis["prenadas"] = prenadas
-        kpis["en_servicio"] = en_servicio
+    grupos_sin_dx = grupos_qs.filter(
+        estado="EN_CURSO",
+        diagnosticos__isnull=True,
+        fecha_fin_prevista__lt=hoy,
+    ).count()
+    if grupos_sin_dx:
+        alertas.append({
+            "nivel": "warning", "icono": "mdi-clipboard-alert-outline",
+            "titulo": f"{grupos_sin_dx} grupo(s) vencidos sin diagnóstico",
+            "detalle": "La fecha fin prevista ya pasó y no tienen tacto registrado.",
+            "link": "/grupos/", "link_texto": "Ver grupos",
+        })
 
-        if prenadas + en_servicio > 0:
-            kpis["pct_prenez"] = round(100 * prenadas / (prenadas + en_servicio), 1)
+    # ── Grupos activos con detalle ────────────────────────────────
+    grupos_detalle = (
+        grupos_qs.filter(estado="EN_CURSO")
+        .select_related("rodeo", "padre_genetico", "establecimiento")
+        .order_by("-fecha_inicio")[:6]
+    )
 
-        kpis["tactos_pendientes"] = EventoReproductivo.objects.filter(
-            fecha_tacto__isnull=True,
-            fecha_servicio__lte=hoy - timedelta(days=35),
-        ).count()
-    except Exception:
-        pass
+    # ── Sugerencias pendientes ────────────────────────────────────
+    sugerencias = (
+        SugerenciaCambioCategoria.objects.filter(procesada=False)
+        .select_related("animal", "animal__rodeo", "umbral", "umbral__categoria_origen",
+                        "categoria_destino", "medicion_origen")
+        .order_by("-created_at")[:8]
+    )
 
-    try:
-        kpis["refuerzos_proximos"] = RegistroSanitario.objects.filter(
-            requiere_refuerzo=True,
-            fecha_refuerzo__gte=hoy,
-            fecha_refuerzo__lte=hoy + timedelta(days=7),
-        ).count()
-    except Exception:
-        pass
-
-    try:
-        sugerencias = (
-            SugerenciaCambioCategoria.objects
-            .filter(procesada=False)
-            .select_related(
-                "animal",
-                "animal__rodeo",
-                "umbral",
-                "umbral__categoria_origen",
-                "categoria_destino",
-                "medicion_origen",
-            )
-            .order_by("-created_at")[:10]
-        )
-    except Exception:
-        sugerencias = []
-
-    tareas = []
-
-    chart_data = {
-        "evolucion_rodeo": {
-            "labels": ["Ene", "Feb", "Mar", "Abr", "May", "Jun"],
-            "series": [
-                {"name": "Vacas", "data": [0, 0, 0, 0, 0, 0]},
-                {"name": "Terneros", "data": [0, 0, 0, 0, 0, 0]},
-                {"name": "Toros", "data": [0, 0, 0, 0, 0, 0]},
-            ],
-        },
-        "composicion_rodeo": {"labels": [], "values": []},
-        "actividad_mensual": {"labels": [], "inseminaciones": [], "partos": []},
+    # ── Composición del rodeo (por categoría) ─────────────────────
+    composicion = list(
+        bovinos_qs.values("categoria_actual__nombre")
+        .annotate(total=Count("id"))
+        .order_by("-total")[:8]
+    )
+    chart_composicion = {
+        "labels": [c["categoria_actual__nombre"] or "Sin categoría" for c in composicion],
+        "values": [c["total"] for c in composicion],
     }
+
+    # ── Últimos eventos reproductivos ─────────────────────────────
+    ultimos_eventos = eventos_qs.select_related(
+        "madre", "padre_genetico"
+    ).order_by("-fecha_servicio")[:5]
 
     return render(request, "index.html", {
-        "kpis": kpis,
-        "sugerencias": sugerencias,
-        "tareas": tareas,
-        "chart_data": chart_data,
+        "kpis":             kpis,
+        "alertas":          alertas,
+        "grupos_detalle":   grupos_detalle,
+        "sugerencias":      sugerencias,
+        "ultimos_eventos":  ultimos_eventos,
+        "chart_composicion": chart_composicion,
+        "hoy":              hoy,
     })
 # ---------------------------------------------------------
 # Alta
 # ---------------------------------------------------------
 @login_required
 def vista_editar_grupo_servicio(request, id):
-    grupo = get_object_or_404(GrupoServicio, id=id)
+    empresa = get_empresa(request)
+    grupo   = get_grupo_or_404(id, empresa)
 
     if request.method == "POST":
         form = GrupoServicioForm(request.POST, instance=grupo)
@@ -202,13 +273,10 @@ def vista_editar_grupo_servicio(request, id):
 def vista_crear_grupo_servicio(request):
     empresa = request.user.profile.empresa
 
-    grupos = GrupoServicio.objects.filter(
-        establecimiento__empresa=empresa
-    ).select_related(
-        "establecimiento",
-        "rodeo",
-        "padre_genetico",
-    ).order_by("-fecha_inicio", "-id")
+    qs = GrupoServicio.objects.select_related("establecimiento", "rodeo", "padre_genetico")
+    if empresa:
+        qs = qs.filter(establecimiento__empresa=empresa)
+    grupos = qs.order_by("-fecha_inicio", "-id")
 
     if request.method == "POST":
         form = GrupoServicioForm(request.POST)
@@ -231,17 +299,8 @@ def vista_crear_grupo_servicio(request):
 
 @login_required
 def vista_detalle_grupo_servicio(request, id):
-    empresa = request.user.profile.empresa
-
-    grupo = get_object_or_404(
-        GrupoServicio.objects.select_related(
-            "establecimiento",
-            "rodeo",
-            "padre_genetico",
-        ),
-        id=id,
-        establecimiento__empresa=empresa,
-    )
+    empresa = get_empresa(request)
+    grupo   = get_grupo_or_404(id, empresa)
 
     miembros_activos = grupo.miembros.filter(
         fecha_egreso__isnull=True
@@ -252,9 +311,47 @@ def vista_detalle_grupo_servicio(request, id):
         "animal__estado_reproductivo",
     ).order_by("-fecha_ingreso")
 
+    todos_eventos  = grupo.eventos.select_related("tipo", "insumo").order_by("fecha", "-id")
+    eventos_repro  = todos_eventos.filter(tipo__categoria="REPRODUCTIVO")
+    eventos_sanit  = todos_eventos.filter(tipo__categoria="SANITARIO")
+    diagnostico    = DiagnosticoPreñezRodeo.objects.filter(grupo_servicio=grupo).first()
+
+    import json
+    from .models import Insumo as InsumoModel, ViaAdministracion as ViaAdm, CategoriaEvento
+
+    def _tipos(cat):
+        return json.dumps([
+            {"id": t.id, "nombre": str(t.nombre),
+             "aplica_insumo": t.aplica_insumo,
+             "crea_evento_reproductivo": t.crea_evento_reproductivo}
+            for t in TipoEvento.objects.filter(categoria=cat, activo=True).order_by("orden", "nombre")
+        ])
+
+    tipos_repro_json = _tipos(CategoriaEvento.REPRODUCTIVO)
+    tipos_sanit_json = _tipos(CategoriaEvento.SANITARIO)
+    insumos_json     = json.dumps([{"id": i.id, "nombre": i.nombre}
+                                   for i in InsumoModel.objects.filter(activo=True).order_by("tipo", "nombre")])
+    via_json         = json.dumps([{"val": v, "label": str(l)} for v, l in ViaAdm.choices])
+    padres_json      = json.dumps([{"id": p.id, "nombre": p.nombre, "codigo": p.codigo}
+                                   for p in PadreGenetico.objects.filter(activo=True).order_by("nombre")])
+    miembros_json    = json.dumps([
+        {"id": m.animal.pk,
+         "caravana": m.animal.caravana_senasa or m.animal.tatuaje or str(m.animal.pk)}
+        for m in miembros_activos
+    ])
+
     return render(request, "reproduccion/grupo_servicio_detalle.html", {
-        "grupo": grupo,
+        "grupo":            grupo,
         "miembros_activos": miembros_activos,
+        "eventos_repro":    eventos_repro,
+        "eventos_sanit":    eventos_sanit,
+        "diagnostico":      diagnostico,
+        "tipos_repro_json": tipos_repro_json,
+        "tipos_sanit_json": tipos_sanit_json,
+        "insumos_json":     insumos_json,
+        "via_json":         via_json,
+        "padres_json":      padres_json,
+        "miembros_json":    miembros_json,
     })
 # ---------------------------------------------------------
 # Endpoint AJAX — rodeos por establecimiento
@@ -586,9 +683,12 @@ def vista_lista_establecimientos(request):
 def vista_lista_bovinos(request):
     empresa = get_empresa(request)
 
-    bovinos = AnimalBovino.objects.filter(
-        rodeo__establecimiento__empresa=empresa
-    ).order_by("-id")
+    qs = AnimalBovino.objects.select_related(
+        "rodeo", "rodeo__establecimiento", "raza", "categoria_actual", "destino_productivo", "estado_vida"
+    )
+    if empresa:
+        qs = qs.filter(rodeo__establecimiento__empresa=empresa)
+    bovinos = qs.order_by("-id")
 
     return render(request, "vista_lista_bovinos.html", {
         "bovinos": bovinos,
@@ -616,12 +716,7 @@ def vista_crear_bovino(request):
 @login_required
 def vista_editar_bovino(request, id):
     empresa = get_empresa(request)
-
-    bovino = get_object_or_404(
-        AnimalBovino,
-        id=id,
-        rodeo__establecimiento__empresa=empresa
-    )
+    bovino  = get_bovino_or_404(id, empresa)
 
     if request.method == "POST":
         if "borrar" in request.POST:
@@ -647,24 +742,7 @@ def vista_editar_bovino(request, id):
 @login_required
 def vista_detalle_bovino(request, id):
     empresa = get_empresa(request)
-
-    bovino = get_object_or_404(
-        AnimalBovino.objects.select_related(
-            "rodeo",
-            "rodeo__establecimiento",
-            "rodeo__establecimiento__empresa",
-            "raza",
-            "subraza",
-            "madre",
-            "padre_genetico",
-            "estado_vida",
-            "categoria_actual",
-            "estado_reproductivo",
-            "destino_productivo",
-        ),
-        id=id,
-        rodeo__establecimiento__empresa=empresa,
-    )
+    bovino  = get_bovino_or_404(id, empresa)
 
     movimientos = bovino.movimientos_rodeo.select_related(
         "rodeo_origen",
@@ -688,14 +766,24 @@ def vista_detalle_bovino(request, id):
 
     evento_origen = bovino.evento_reproductivo_origen.first()
 
+    aplicaciones_insumo = bovino.aplicaciones_insumo.select_related(
+        "evento_grupo__tipo", "evento_grupo__insumo", "evento_grupo__grupo_servicio"
+    ).order_by("-evento_grupo__fecha")
+
+    grupos_historico = bovino.membresias_grupo.select_related(
+        "grupo", "grupo__padre_genetico", "grupo__establecimiento"
+    ).order_by("-fecha_ingreso")
+
     return render(request, "detalle_bovinos/main_detalle_bovino.html", {
-        "bovino": bovino,
-        "movimientos": movimientos,
-        "mediciones": mediciones,
-        "mediciones_grafico": mediciones_grafico,
-        "sanitarios": sanitarios,
-        "eventos_como_madre": eventos_como_madre,
-        "evento_origen": evento_origen,
+        "bovino":              bovino,
+        "movimientos":         movimientos,
+        "mediciones":          mediciones,
+        "mediciones_grafico":  mediciones_grafico,
+        "sanitarios":          sanitarios,
+        "eventos_como_madre":  eventos_como_madre,
+        "evento_origen":       evento_origen,
+        "aplicaciones_insumo": aplicaciones_insumo,
+        "grupos_historico":    grupos_historico,
     })
 
 @login_required
@@ -726,12 +814,7 @@ def ajax_subrazas_por_raza(request):
 @login_required
 def vista_mover_bovino(request, id):
     empresa = get_empresa(request)
-
-    bovino = get_object_or_404(
-        AnimalBovino,
-        id=id,
-        rodeo__establecimiento__empresa=empresa
-    )
+    bovino  = get_bovino_or_404(id, empresa)
 
     if request.method == "POST":
         form = MovimientoRodeoForm(request.POST, empresa=empresa, animal=bovino)
@@ -766,12 +849,9 @@ def vista_mover_bovino(request, id):
 def vista_lista_eventos_reproductivos(request):
     empresa = get_empresa(request)
 
-    eventos = EventoReproductivo.objects.filter(
-        madre__rodeo__establecimiento__empresa=empresa
-    ).select_related(
-        "madre",
-        "padre_genetico",
-        "animal_resultante",
+    eventos = _empresa_filter(
+        EventoReproductivo.objects.select_related("madre", "padre_genetico", "animal_resultante"),
+        empresa, field="madre__rodeo__establecimiento__empresa"
     ).order_by("-fecha_servicio", "-id")
 
     return render(request, "eventos_reproductivos/lista.html", {
@@ -802,32 +882,218 @@ def vista_detalle_evento_reproductivo(request, id):
     empresa = get_empresa(request)
 
     evento = get_object_or_404(
-        EventoReproductivo.objects.select_related(
-            "madre",
-            "padre_genetico",
-            "animal_resultante",
+        _empresa_filter(
+            EventoReproductivo.objects.select_related("madre", "padre_genetico", "animal_resultante"),
+            empresa, field="madre__rodeo__establecimiento__empresa"
         ),
         id=id,
-        madre__rodeo__establecimiento__empresa=empresa,
     )
 
     return render(request, "eventos_reproductivos/detalle.html", {
         "evento": evento,
     })
 
+# =========================================================
+# PROPAGACIÓN DE EVENTO A ANIMALES INDIVIDUALES
+# =========================================================
+
+def _propagar_evento_a_animales(evento, animales_qs):
+    """
+    Crea los registros individuales en cada animal según el tipo de evento:
+    - Hormona reproductiva → AplicacionInsumoAnimal
+    - IA / Repaso          → EventoReproductivo
+    - Sanitario            → RegistroSanitario
+    """
+    tipo = evento.tipo
+
+    if tipo.crea_evento_reproductivo:
+        tipo_repr = tipo.tipo_evento_reproductivo or TipoEventoReproductivo.INSEMINACION
+        for animal in animales_qs:
+            EventoReproductivo.objects.create(
+                madre=animal,
+                padre_genetico=evento.padre_genetico,
+                tipo_evento=tipo_repr,
+                fecha_servicio=evento.fecha,
+                observaciones=f"Registrado desde grupo '{evento.grupo_servicio.nombre}'.",
+            )
+
+    elif tipo.categoria == CategoriaEvento.REPRODUCTIVO:
+        for animal in animales_qs:
+            AplicacionInsumoAnimal.objects.get_or_create(
+                evento_grupo=evento,
+                animal=animal,
+            )
+
+    elif tipo.categoria == CategoriaEvento.SANITARIO:
+        if evento.insumo and evento.insumo.tipo == TipoInsumo.VACUNA:
+            tipo_san = TipoSanitario.VACUNA
+        elif evento.insumo and evento.insumo.tipo == TipoInsumo.ANTIPARASITARIO:
+            tipo_san = TipoSanitario.DESPARASITACION
+        else:
+            tipo_san = TipoSanitario.OTRO
+        for animal in animales_qs:
+            RegistroSanitario.objects.create(
+                animal=animal,
+                tipo_evento=tipo_san,
+                nombre=tipo.nombre,
+                producto=evento.insumo.nombre if evento.insumo else "",
+                dosis=evento.dosis or "",
+                fecha=evento.fecha,
+                observaciones=f"Registrado desde grupo '{evento.grupo_servicio.nombre}'.",
+            )
+
+
+# =========================================================
+# EVENTOS DE GRUPO DE SERVICIO
+# =========================================================
+
+@login_required
+@require_POST
+def ajax_agregar_evento_grupo(request, pk):
+    empresa = get_empresa(request)
+    grupo   = get_grupo_or_404(pk, empresa)
+
+    form = EventoGrupoServicioForm(request.POST)
+    if form.is_valid():
+        evento                = form.save(commit=False)
+        evento.grupo_servicio = grupo
+        padre_id = request.POST.get("padre_genetico")
+        if padre_id:
+            try:
+                evento.padre_genetico = PadreGenetico.objects.get(pk=padre_id)
+            except PadreGenetico.DoesNotExist:
+                pass
+        evento.save()
+
+        # Propagar solo a los animales seleccionados (o todos si no se especifica)
+        ids_raw = (request.POST.get("animal_ids") or "").strip()
+        if ids_raw:
+            try:
+                ids = [int(x) for x in ids_raw.split(",") if x.strip()]
+                animales = AnimalBovino.objects.filter(pk__in=ids)
+            except ValueError:
+                animales = AnimalBovino.objects.none()
+        else:
+            animales = AnimalBovino.objects.filter(
+                id__in=grupo.miembros.filter(fecha_egreso__isnull=True).values_list("animal_id", flat=True)
+            )
+
+        _propagar_evento_a_animales(evento, animales)
+
+        return JsonResponse({
+            "ok": True,
+            "propagados": animales.count(),
+            "evento": {
+                "id":        evento.pk,
+                "fecha":     evento.fecha.strftime("%d/%m/%Y"),
+                "tipo":      str(evento.tipo),
+                "insumo":    str(evento.insumo) if evento.insumo else "—",
+                "dosis":     evento.dosis or "—",
+                "via_admin": evento.get_via_admin_display() if evento.via_admin else "—",
+            },
+        })
+    return JsonResponse({"ok": False, "errors": form.errors}, status=400)
+
+
+@login_required
+@require_POST
+def ajax_eliminar_evento_grupo(request, pk, evento_pk):
+    empresa = get_empresa(request)
+    grupo   = get_grupo_or_404(pk, empresa)
+    evento  = get_object_or_404(EventoGrupoServicio, pk=evento_pk, grupo_servicio=grupo)
+    evento.delete()
+    return JsonResponse({"ok": True})
+
+
+# =========================================================
+# DIAGNÓSTICO DE PREÑEZ POR GRUPO
+# =========================================================
+
+@login_required
+def vista_diagnostico_grupo(request, pk):
+    empresa = get_empresa(request)
+    grupo   = get_grupo_or_404(pk, empresa)
+
+    # Diagnóstico existente o None
+    diagnostico = DiagnosticoPreñezRodeo.objects.filter(grupo_servicio=grupo).first()
+
+    # Todos los animales que pasaron por el grupo (activos + egresados)
+    miembros = (
+        grupo.miembros
+        .select_related("animal", "animal__categoria_actual", "animal__estado_reproductivo")
+        .order_by("-fecha_ingreso")
+    )
+    animal_ids = miembros.values_list("animal_id", flat=True).distinct()
+
+    # Resultados ya cargados para este diagnóstico
+    resultados_existentes = {}
+    if diagnostico:
+        for r in diagnostico.resultados.select_related("animal"):
+            resultados_existentes[r.animal_id] = r
+
+    if request.method == "POST":
+        accion = request.POST.get("accion")
+
+        # ── Crear / actualizar encabezado del diagnóstico ──
+        if accion == "guardar_encabezado":
+            form = DiagnosticoPreñezRodeoForm(request.POST, instance=diagnostico)
+            if form.is_valid():
+                dx             = form.save(commit=False)
+                dx.grupo_servicio = grupo
+                dx.save()
+                messages.success(request, "Diagnóstico guardado.")
+                return redirect("vista_diagnostico_grupo", pk=grupo.pk)
+            messages.error(request, "Corregí los errores del formulario.")
+
+        # ── Guardar resultado individual ──
+        elif accion == "guardar_resultado":
+            if not diagnostico:
+                return JsonResponse({"ok": False, "error": "Creá el diagnóstico primero."}, status=400)
+            animal_id = request.POST.get("animal_id")
+            resultado = request.POST.get("resultado")
+            meses     = request.POST.get("meses_gestacion") or None
+            destino   = request.POST.get("destino_vacia") or None
+
+            if resultado not in [c.value for c in ResultadoDiagnostico]:
+                return JsonResponse({"ok": False, "error": "Resultado inválido."}, status=400)
+
+            animal = get_object_or_404(AnimalBovino, pk=animal_id)
+            obj, _ = ResultadoDiagnosticoAnimal.objects.update_or_create(
+                diagnostico=diagnostico,
+                animal=animal,
+                defaults={
+                    "resultado":       resultado,
+                    "meses_gestacion": int(meses) if meses else None,
+                    "destino_vacia":   destino if resultado == ResultadoDiagnostico.VACIA else None,
+                },
+            )
+            return JsonResponse({"ok": True, "resultado": obj.get_resultado_display()})
+
+    else:
+        form = DiagnosticoPreñezRodeoForm(instance=diagnostico)
+
+    return render(request, "reproduccion/diagnostico_grupo.html", {
+        "grupo":                 grupo,
+        "diagnostico":           diagnostico,
+        "form":                  form,
+        "miembros":              miembros,
+        "resultados_existentes": resultados_existentes,
+        "opciones_resultado":    ResultadoDiagnostico.choices,
+        "opciones_destino":      DestinoVacia.choices,
+    })
+
+
 @login_required
 def vista_crear_ternero_desde_evento(request, id):
     empresa = get_empresa(request)
 
     evento = get_object_or_404(
-        EventoReproductivo,
+        _empresa_filter(EventoReproductivo.objects, empresa, "madre__rodeo__establecimiento__empresa"),
         id=id,
-        madre__rodeo__establecimiento__empresa=empresa,
     )
 
-    rodeos = Rodeo.objects.filter(
-        establecimiento__empresa=empresa,
-        activo=True
+    rodeos = _empresa_filter(
+        Rodeo.objects.filter(activo=True), empresa, "establecimiento__empresa"
     ).order_by("nombre")
 
     razas = RazaBovino.objects.filter(
@@ -858,9 +1124,8 @@ def vista_crear_ternero_desde_evento(request, id):
 
         try:
             rodeo = get_object_or_404(
-                Rodeo,
+                _empresa_filter(Rodeo.objects, empresa, "establecimiento__empresa"),
                 id=rodeo_id,
-                establecimiento__empresa=empresa
             )
 
             raza = get_object_or_404(RazaBovino, id=raza_id)

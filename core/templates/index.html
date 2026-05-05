@@ -1,351 +1,371 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load i18n %}
 
 {% block plugin_css %}
+<style>
+  .kpi-card {
+    border-radius: 14px;
+    padding: 1.25rem 1.5rem;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    height: 100%;
+  }
+  .kpi-card .kpi-label  { font-size: 0.78rem; color: #6b7280; text-transform: uppercase; letter-spacing: .5px; margin-bottom: .3rem; }
+  .kpi-card .kpi-value  { font-size: 2rem; font-weight: 700; color: #111827; line-height: 1; }
+  .kpi-card .kpi-sub    { font-size: 0.82rem; margin-top: .4rem; }
+  .kpi-card .kpi-icon   { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
+  .icon-green  { background: rgba(34,197,94,.12);  color: #16a34a; }
+  .icon-blue   { background: rgba(59,130,246,.12); color: #2563eb; }
+  .icon-orange { background: rgba(249,115,22,.12); color: #ea580c; }
+  .icon-red    { background: rgba(239,68,68,.12);  color: #dc2626; }
+  .icon-purple { background: rgba(139,92,246,.12); color: #7c3aed; }
+  .icon-teal   { background: rgba(20,184,166,.12); color: #0d9488; }
+  .icon-yellow { background: rgba(234,179,8,.12);  color: #ca8a04; }
+  .icon-pink   { background: rgba(236,72,153,.12); color: #db2777; }
+
+  .alerta-card {
+    border-left: 4px solid;
+    border-radius: 8px;
+    padding: .75rem 1rem;
+    margin-bottom: .6rem;
+    background: #fff;
+    display: flex;
+    align-items: flex-start;
+    gap: .75rem;
+  }
+  .alerta-danger  { border-color: #dc2626; background: #fef2f2; }
+  .alerta-warning { border-color: #f59e0b; background: #fffbeb; }
+  .alerta-info    { border-color: #3b82f6; background: #eff6ff; }
+  .alerta-success { border-color: #22c55e; background: #f0fdf4; }
+  .alerta-icon    { font-size: 1.25rem; margin-top: .1rem; flex-shrink: 0; }
+  .alerta-danger .alerta-icon  { color: #dc2626; }
+  .alerta-warning .alerta-icon { color: #f59e0b; }
+  .alerta-info .alerta-icon    { color: #3b82f6; }
+
+  .grupo-chip {
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    padding: .75rem 1rem;
+    background: #fff;
+    margin-bottom: .6rem;
+    transition: box-shadow .15s;
+  }
+  .grupo-chip:hover { box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="content-wrapper">
-  <div class="row">
-    <div class="col-sm-12">
-      <div class="home-tab">
 
-        {# ============================================================ #}
-        {# Tabs superiores + botonera                                   #}
-        {# ============================================================ #}
-        <div class="d-sm-flex align-items-center justify-content-between border-bottom">
-          <ul class="nav nav-tabs" role="tablist">
-            <li class="nav-item">
-              <a class="nav-link active ps-0" id="home-tab" data-bs-toggle="tab" href="#overview" role="tab" aria-controls="overview" aria-selected="true">Resumen</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" id="profile-tab" data-bs-toggle="tab" href="#reproduccion" role="tab" aria-selected="false">Reproducción</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" id="contact-tab" data-bs-toggle="tab" href="#sanidad" role="tab" aria-selected="false">Sanidad</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link border-0" id="more-tab" data-bs-toggle="tab" href="#more" role="tab" aria-selected="false">Más</a>
-            </li>
-          </ul>
-          <div>
-            <div class="btn-wrapper">
-              <a href="#" class="btn btn-otline-dark align-items-center"><i class="icon-share"></i> Compartir</a>
-              <a href="#" class="btn btn-otline-dark"><i class="icon-printer"></i> Imprimir</a>
-              <a href="{% url 'grupo_servicio_crear' %}" class="btn btn-primary text-white me-0"><i class="icon-plus"></i> Nuevo grupo</a>
-            </div>
-          </div>
-        </div>
-
-        {# ============================================================ #}
-        {# Contenido de los tabs                                         #}
-        {# ============================================================ #}
-        <div class="tab-content tab-content-basic">
-          <div class="tab-pane fade show active" id="overview" role="tabpanel" aria-labelledby="overview">
-
-            {# ---------------- FILA DE KPIs ---------------- #}
-            <div class="row">
-              <div class="col-sm-12">
-                <div class="statistics-details d-flex align-items-center justify-content-between">
-                  <div>
-                    <p class="statistics-title">Animales activos</p>
-                    <h3 class="rate-percentage">{{ kpis.total_animales|default:"0" }}</h3>
-                    <p class="text-success d-flex"><i class="mdi mdi-menu-up"></i><span>{{ kpis.delta_animales|default:"0" }}</span></p>
-                  </div>
-                  <div>
-                    <p class="statistics-title">Vacas en servicio</p>
-                    <h3 class="rate-percentage">{{ kpis.en_servicio|default:"0" }}</h3>
-                    <p class="text-success d-flex"><i class="mdi mdi-menu-up"></i><span>activas</span></p>
-                  </div>
-                  <div>
-                    <p class="statistics-title">Preñadas</p>
-                    <h3 class="rate-percentage">{{ kpis.prenadas|default:"0" }}</h3>
-                    <p class="text-success d-flex"><i class="mdi mdi-menu-up"></i><span>{{ kpis.pct_prenez|default:"0" }}%</span></p>
-                  </div>
-                  <div class="d-none d-md-block">
-                    <p class="statistics-title">Terneros al pie</p>
-                    <h3 class="rate-percentage">{{ kpis.terneros|default:"0" }}</h3>
-                    <p class="text-success d-flex"><i class="mdi mdi-menu-up"></i><span>del año</span></p>
-                  </div>
-                  <div class="d-none d-md-block">
-                    <p class="statistics-title">Tactos pendientes</p>
-                    <h3 class="rate-percentage">{{ kpis.tactos_pendientes|default:"0" }}</h3>
-                    <p class="text-danger d-flex"><i class="mdi mdi-menu-down"></i><span>revisar</span></p>
-                  </div>
-                  <div class="d-none d-md-block">
-                    <p class="statistics-title">Refuerzos próximos</p>
-                    <h3 class="rate-percentage">{{ kpis.refuerzos_proximos|default:"0" }}</h3>
-                    <p class="text-danger d-flex"><i class="mdi mdi-menu-down"></i><span>7 días</span></p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {# ---------------- BLOQUE PRINCIPAL ---------------- #}
-            <div class="row">
-
-              {# =============== COLUMNA IZQUIERDA =============== #}
-              <div class="col-lg-8 d-flex flex-column">
-
-                {# Gráfico: evolución del rodeo #}
-                <div class="row flex-grow">
-                  <div class="col-12 grid-margin stretch-card">
-                    <div class="card card-rounded">
-                      <div class="card-body">
-                        <div class="d-sm-flex justify-content-between align-items-start">
-                          <div>
-                            <h4 class="card-title card-title-dash">Evolución del rodeo</h4>
-                            <p class="card-subtitle card-subtitle-dash">Cabezas por categoría a lo largo del año</p>
-                          </div>
-                          <div>
-                            <div class="dropdown">
-                              <button class="btn btn-light dropdown-toggle toggle-dark btn-lg mb-0 me-0" type="button" id="dropdownMenuButton2" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> Este año </button>
-                              <div class="dropdown-menu" aria-labelledby="dropdownMenuButton2">
-                                <h6 class="dropdown-header">Período</h6>
-                                <a class="dropdown-item" href="#">Este mes</a>
-                                <a class="dropdown-item" href="#">Últimos 6 meses</a>
-                                <a class="dropdown-item" href="#">Este año</a>
-                                <div class="dropdown-divider"></div>
-                                <a class="dropdown-item" href="#">Personalizado</a>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <div class="d-sm-flex align-items-center mt-1 justify-content-between">
-                          <div class="d-sm-flex align-items-center mt-4 justify-content-between">
-                            <h2 class="me-2 fw-bold">{{ kpis.total_animales|default:"0" }}</h2>
-                            <h4 class="me-2">cabezas</h4>
-                            <h4 class="text-success">({{ kpis.variacion_anual|default:"+0.0%" }})</h4>
-                          </div>
-                          <div class="me-3">
-                            <div id="marketingOverview-legend"></div>
-                          </div>
-                        </div>
-                        <div class="chartjs-bar-wrapper mt-3">
-                          <canvas id="marketingOverview"></canvas>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {# Tabla: sugerencias de cambio de categoría pendientes #}
-                <div class="row flex-grow">
-                  <div class="col-12 grid-margin stretch-card">
-                    <div class="card card-rounded">
-                      <div class="card-body">
-                        <div class="d-sm-flex justify-content-between align-items-start">
-                          <div>
-                            <h4 class="card-title card-title-dash">Sugerencias de cambio de categoría</h4>
-                            <p class="card-subtitle card-subtitle-dash">Tenés {{ sugerencias|length|default:"0" }} animales listos para re-categorizar</p>
-                          </div>
-                          <div>
-                            <a href="#" class="btn btn-primary btn-lg text-white mb-0 me-0" role="button"><i class="mdi mdi-check-all"></i> Procesar todas</a>
-                          </div>
-                        </div>
-                        <div class="table-responsive mt-1">
-                          <table class="table select-table">
-                            <thead>
-                              <tr>
-                                <th>
-                                  <div class="form-check form-check-flat mt-0">
-                                    <label class="form-check-label">
-                                      <input type="checkbox" class="form-check-input" aria-checked="false" id="check-all"><i class="input-helper"></i></label>
-                                  </div>
-                                </th>
-                                <th>Animal</th>
-                                <th>Transición</th>
-                                <th>Condición</th>
-                                <th>Estado</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {% for s in sugerencias %}
-                              <tr>
-                                <td>
-                                  <div class="form-check form-check-flat mt-0">
-                                    <label class="form-check-label">
-                                      <input type="checkbox" class="form-check-input" aria-checked="false"><i class="input-helper"></i></label>
-                                  </div>
-                                </td>
-                                <td>
-                                  <div class="d-flex">
-                                    <div>
-                                      <h6>{{ s.animal.caravana_senasa|default:s.animal.tatuaje|default:"—" }}</h6>
-                                      <p>{{ s.animal.rodeo.nombre }}</p>
-                                    </div>
-                                  </div>
-                                </td>
-                                <td>
-                                  <h6>{{ s.umbral.categoria_origen }} → {{ s.categoria_destino }}</h6>
-                                  <p>{{ s.umbral.get_motivo_sugerido_display }}</p>
-                                </td>
-                                <td>
-                                  <div>
-                                    <div class="d-flex justify-content-between align-items-center mb-1 max-width-progress-wrap">
-                                      <p class="text-success">{{ s.medicion_origen.peso|default:"—" }} kg</p>
-                                      <p>{{ s.animal.edad_display }}</p>
-                                    </div>
-                                    <div class="progress progress-md">
-                                      <div class="progress-bar bg-success" role="progressbar" style="width: 100%"></div>
-                                    </div>
-                                  </div>
-                                </td>
-                                <td>
-                                  {% if s.procesada %}
-                                    <div class="badge badge-opacity-success">Procesada</div>
-                                  {% else %}
-                                    <div class="badge badge-opacity-warning">Pendiente</div>
-                                  {% endif %}
-                                </td>
-                              </tr>
-                              {% empty %}
-                              <tr>
-                                <td colspan="5" class="text-center text-muted py-4">
-                                  No hay sugerencias pendientes.
-                                </td>
-                              </tr>
-                              {% endfor %}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-              {# =============== FIN COLUMNA IZQUIERDA =============== #}
-
-              {# =============== COLUMNA DERECHA =============== #}
-              <div class="col-lg-4 d-flex flex-column">
-
-                {# Lista: tareas del día / alertas #}
-                <div class="row flex-grow">
-                  <div class="col-12 grid-margin stretch-card">
-                    <div class="card card-rounded">
-                      <div class="card-body">
-                        <div class="row">
-                          <div class="col-lg-12">
-                            <div class="d-flex justify-content-between align-items-center">
-                              <h4 class="card-title card-title-dash">Tareas pendientes</h4>
-                              <div class="add-items d-flex mb-0">
-                                <button class="add btn btn-icons btn-rounded btn-primary todo-list-add-btn text-white me-0 pl-12p"><i class="mdi mdi-plus"></i></button>
-                              </div>
-                            </div>
-                            <div class="list-wrapper">
-                              <ul class="todo-list todo-list-rounded">
-                                {% for t in tareas %}
-                                <li class="d-block {% if forloop.last %}border-bottom-0{% endif %}">
-                                  <div class="form-check w-100">
-                                    <label class="form-check-label">
-                                      <input class="checkbox" type="checkbox"> {{ t.titulo }} <i class="input-helper rounded"></i>
-                                    </label>
-                                    <div class="d-flex mt-2">
-                                      <div class="ps-4 text-small me-3">{{ t.fecha|date:"d M Y" }}</div>
-                                      <div class="badge badge-opacity-{{ t.nivel|default:'warning' }} me-3">{{ t.etiqueta }}</div>
-                                      {% if t.flag %}<i class="mdi mdi-flag ms-2 flag-color"></i>{% endif %}
-                                    </div>
-                                  </div>
-                                </li>
-                                {% empty %}
-                                <li class="d-block border-bottom-0">
-                                  <div class="form-check w-100">
-                                    <label class="form-check-label text-muted">
-                                      Sin tareas pendientes <i class="input-helper rounded"></i>
-                                    </label>
-                                  </div>
-                                </li>
-                                {% endfor %}
-                              </ul>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {# Doughnut: composición del rodeo por categoría #}
-                <div class="row flex-grow">
-                  <div class="col-12 grid-margin stretch-card">
-                    <div class="card card-rounded">
-                      <div class="card-body">
-                        <div class="row">
-                          <div class="col-lg-12">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                              <h4 class="card-title card-title-dash">Composición del rodeo</h4>
-                            </div>
-                            <div>
-                              <canvas class="my-auto" id="doughnutChart"></canvas>
-                            </div>
-                            <div id="doughnutChart-legend" class="mt-5 text-center"></div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {# Bar: actividad reproductiva mensual #}
-                <div class="row flex-grow">
-                  <div class="col-12 grid-margin stretch-card">
-                    <div class="card card-rounded">
-                      <div class="card-body">
-                        <div class="row">
-                          <div class="col-lg-12">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                              <div>
-                                <h4 class="card-title card-title-dash">Actividad reproductiva</h4>
-                              </div>
-                              <div>
-                                <div class="dropdown">
-                                  <button class="btn btn-light dropdown-toggle toggle-dark btn-lg mb-0 me-0" type="button" id="dropdownMenuButton3" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> Mensual </button>
-                                  <div class="dropdown-menu" aria-labelledby="dropdownMenuButton3">
-                                    <h6 class="dropdown-header">Semanal</h6>
-                                    <a class="dropdown-item" href="#">Anual</a>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            <div class="mt-3">
-                              <canvas id="leaveReport"></canvas>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="row flex-grow"></div>
-              </div>
-              {# =============== FIN COLUMNA DERECHA =============== #}
-
-            </div>
-          </div>
-        </div>
-
+  {% comment %} ENCABEZADO {% endcomment %}
+  <div class="row mb-3">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+      <div>
+        <h4 class="mb-0">Panel de control</h4>
+        <p class="text-muted small mb-0">{{ hoy|date:"d \d\e F \d\e Y" }}</p>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="{% url 'grupo_servicio_crear' %}" class="btn btn-primary text-white btn-sm">
+          <i class="mdi mdi-plus"></i> Nuevo grupo
+        </a>
+        <a href="{% url 'vista_crear_bovino' %}" class="btn btn-otline-dark btn-sm">
+          <i class="mdi mdi-cow"></i> Nuevo bovino
+        </a>
       </div>
     </div>
   </div>
+
+  {% comment %} KPIs {% endcomment %}
+  <div class="row g-3 mb-3">
+    <div class="col-6 col-md-3">
+      <div class="kpi-card d-flex align-items-center gap-3">
+        <div class="kpi-icon icon-green"><i class="mdi mdi-cow"></i></div>
+        <div>
+          <div class="kpi-label">Animales activos</div>
+          <div class="kpi-value">{{ kpis.total_animales }}</div>
+          <div class="kpi-sub text-muted">{{ kpis.terneros_año }} terneros este año</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="kpi-card d-flex align-items-center gap-3">
+        <div class="kpi-icon icon-blue"><i class="mdi mdi-account-group-outline"></i></div>
+        <div>
+          <div class="kpi-label">En servicio</div>
+          <div class="kpi-value">{{ kpis.vacas_en_grupo }}</div>
+          <div class="kpi-sub text-muted">{{ kpis.grupos_activos }} grupo{% if kpis.grupos_activos != 1 %}s{% endif %} activo{% if kpis.grupos_activos != 1 %}s{% endif %}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="kpi-card d-flex align-items-center gap-3">
+        <div class="kpi-icon icon-teal"><i class="mdi mdi-heart-pulse"></i></div>
+        <div>
+          <div class="kpi-label">Preñadas</div>
+          <div class="kpi-value">{{ kpis.prenadas }}</div>
+          <div class="kpi-sub {% if kpis.pct_prenez >= 60 %}text-success{% elif kpis.pct_prenez >= 40 %}text-warning{% else %}text-danger{% endif %}">
+            {{ kpis.pct_prenez }}% preñez
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="kpi-card d-flex align-items-center gap-3">
+        <div class="kpi-icon {% if kpis.tactos_pendientes > 0 %}icon-red{% else %}icon-green{% endif %}">
+          <i class="mdi mdi-clipboard-check-outline"></i>
+        </div>
+        <div>
+          <div class="kpi-label">Tactos pendientes</div>
+          <div class="kpi-value {% if kpis.tactos_pendientes > 0 %}text-danger{% endif %}">{{ kpis.tactos_pendientes }}</div>
+          <div class="kpi-sub text-muted">+35 días sin diagnóstico</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="kpi-card d-flex align-items-center gap-3">
+        <div class="kpi-icon icon-yellow"><i class="mdi mdi-needle"></i></div>
+        <div>
+          <div class="kpi-label">Refuerzos (7 días)</div>
+          <div class="kpi-value {% if kpis.refuerzos_7d > 0 %}text-warning{% endif %}">{{ kpis.refuerzos_7d }}</div>
+          <div class="kpi-sub text-muted">vacunas / sanitarios</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="kpi-card d-flex align-items-center gap-3">
+        <div class="kpi-icon icon-purple"><i class="mdi mdi-tag-multiple-outline"></i></div>
+        <div>
+          <div class="kpi-label">Re-categorizar</div>
+          <div class="kpi-value">{{ sugerencias|length }}</div>
+          <div class="kpi-sub text-muted">animales listos</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% comment %} CUERPO PRINCIPAL {% endcomment %}
+  <div class="row g-3">
+
+    {% comment %} COLUMNA IZQUIERDA {% endcomment %}
+    <div class="col-lg-8">
+
+      {% comment %} ALERTAS {% endcomment %}
+      {% if alertas %}
+      <div class="card card-rounded mb-3">
+        <div class="card-body">
+          <h5 class="card-title card-title-dash mb-3">
+            <i class="mdi mdi-bell-outline me-2 text-danger"></i>Alertas y pendientes
+          </h5>
+          {% for a in alertas %}
+          <div class="alerta-card alerta-{{ a.nivel }}">
+            <i class="mdi {{ a.icono }} alerta-icon"></i>
+            <div class="flex-grow-1">
+              <div class="fw-semibold" style="font-size:.9rem;">{{ a.titulo }}</div>
+              <div class="text-muted" style="font-size:.82rem;">{{ a.detalle }}</div>
+            </div>
+            <a href="{{ a.link }}" class="btn btn-xs btn-outline-secondary py-0 px-2 align-self-center" style="font-size:.78rem;white-space:nowrap;">
+              {{ a.link_texto }} →
+            </a>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% comment %} GRUPOS ACTIVOS {% endcomment %}
+      <div class="card card-rounded mb-3">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="card-title card-title-dash mb-0">
+              <i class="mdi mdi-account-group-outline me-2 text-success"></i>Grupos de servicio activos
+            </h5>
+            <a href="{% url 'grupo_servicio_crear' %}" class="btn btn-sm btn-otline-dark">Ver todos</a>
+          </div>
+          {% for g in grupos_detalle %}
+          <a href="{% url 'grupo_servicio_detalle' g.id %}" class="text-decoration-none text-dark">
+            <div class="grupo-chip">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <div class="fw-semibold" style="font-size:.9rem;">{{ g.nombre }}</div>
+                  <div class="text-muted small">
+                    {{ g.establecimiento }} — {{ g.rodeo|default:"Sin rodeo base" }}
+                    {% if g.padre_genetico %}— {{ g.padre_genetico.nombre }}{% endif %}
+                  </div>
+                </div>
+                <div class="text-end">
+                  <span class="badge badge-opacity-success">{{ g.total_activos }} animales</span>
+                  <div class="text-muted small mt-1">Desde {{ g.fecha_inicio|date:"d/m/Y" }}</div>
+                </div>
+              </div>
+            </div>
+          </a>
+          {% empty %}
+          <p class="text-muted text-center py-3">No hay grupos activos. <a href="{% url 'grupo_servicio_crear' %}">Crear uno</a></p>
+          {% endfor %}
+        </div>
+      </div>
+
+      {% comment %} ÚLTIMOS EVENTOS REPRODUCTIVOS {% endcomment %}
+      <div class="card card-rounded">
+        <div class="card-body">
+          <h5 class="card-title card-title-dash mb-3">
+            <i class="mdi mdi-history me-2"></i>Últimos servicios registrados
+          </h5>
+          <div class="table-responsive">
+            <table class="table select-table">
+              <thead>
+                <tr>
+                  <th>Animal</th><th>Tipo</th><th>Padre / Semen</th>
+                  <th>Fecha</th><th>Tacto</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for ev in ultimos_eventos %}
+                <tr>
+                  <td>
+                    <a href="{% url 'vista_detalle_bovino' ev.madre.id %}" class="fw-semibold text-decoration-none">
+                      {{ ev.madre.caravana_senasa|default:ev.madre.tatuaje|default:"—" }}
+                    </a>
+                  </td>
+                  <td>
+                    {% if ev.tipo_evento == 'INSEMINACION' %}
+                      <span class="badge badge-opacity-success">IA</span>
+                    {% else %}
+                      <span class="badge badge-opacity-primary">Natural</span>
+                    {% endif %}
+                  </td>
+                  <td class="small">{{ ev.padre_genetico|default:"—" }}</td>
+                  <td class="small">{{ ev.fecha_servicio|date:"d/m/Y" }}</td>
+                  <td>
+                    {% if ev.resultado_tacto == 'PRENADA' %}
+                      <span class="badge badge-opacity-success">Preñada</span>
+                    {% elif ev.resultado_tacto == 'VACIA' %}
+                      <span class="badge badge-opacity-danger">Vacía</span>
+                    {% elif ev.resultado_tacto == 'DUDOSA' %}
+                      <span class="badge badge-opacity-warning">Dudosa</span>
+                    {% else %}
+                      <span class="text-muted small">Pendiente</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center text-muted py-3">Sin servicios registrados.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    {% comment %} FIN COLUMNA IZQUIERDA {% endcomment %}
+
+    {% comment %} COLUMNA DERECHA {% endcomment %}
+    <div class="col-lg-4">
+
+      {% comment %} COMPOSICIÓN DEL RODEO {% endcomment %}
+      <div class="card card-rounded mb-3">
+        <div class="card-body">
+          <h5 class="card-title card-title-dash mb-3">
+            <i class="mdi mdi-chart-donut me-2"></i>Composición del rodeo
+          </h5>
+          <canvas id="chartComposicion" height="200"></canvas>
+          <div class="mt-3" id="composicion-leyenda"></div>
+        </div>
+      </div>
+
+      {% comment %} SUGERENCIAS DE CATEGORÍA {% endcomment %}
+      <div class="card card-rounded">
+        <div class="card-body">
+          <h5 class="card-title card-title-dash mb-3">
+            <i class="mdi mdi-tag-arrow-up-outline me-2 text-purple"></i>Sugerencias de recategorización
+          </h5>
+          {% for s in sugerencias %}
+          <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+            <div>
+              <div class="fw-semibold small">
+                <a href="{% url 'vista_detalle_bovino' s.animal.id %}" class="text-decoration-none">
+                  {{ s.animal.caravana_senasa|default:s.animal.tatuaje|default:"—" }}
+                </a>
+              </div>
+              <div class="text-muted" style="font-size:.78rem;">
+                {{ s.umbral.categoria_origen }} → {{ s.categoria_destino }}
+                · {{ s.medicion_origen.peso|default:"—" }} kg · {{ s.animal.edad_display }}
+              </div>
+            </div>
+            <span class="badge badge-opacity-warning">Pendiente</span>
+          </div>
+          {% empty %}
+          <p class="text-muted text-center py-3 mb-0">Sin sugerencias pendientes ✓</p>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div>
+    {% comment %} FIN COLUMNA DERECHA {% endcomment %}
+
+  </div>
 </div>
-
-{# ============================================================ #}
-{# Datos de charts serializados en JSON para JS                 #}
-{# ============================================================ #}
-{{ chart_data|json_script:"chart-data" }}
 {% endblock %}
 
-{% block plugin_js %}
-{% endblock %}
 
 {% block custom_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-  (function () {
-    const raw = document.getElementById('chart-data');
-    if (!raw) return;
-    window.INNOBREED_CHART_DATA = JSON.parse(raw.textContent);
-  })();
+const composicionData = {
+  labels: {{ chart_composicion.labels|safe }},
+  values: {{ chart_composicion.values|safe }},
+};
+
+const COLORS = [
+  '#16a34a','#2563eb','#ea580c','#7c3aed',
+  '#0d9488','#ca8a04','#db2777','#64748b',
+];
+
+if (composicionData.labels.length > 0) {
+  const ctx = document.getElementById('chartComposicion');
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: composicionData.labels,
+      datasets: [{
+        data:            composicionData.values,
+        backgroundColor: COLORS.slice(0, composicionData.labels.length),
+        borderWidth:     2,
+        borderColor:     '#fff',
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.label}: ${ctx.parsed} animales`
+          }
+        }
+      },
+      cutout: '65%',
+    }
+  });
+
+  // Leyenda manual
+  const total = composicionData.values.reduce((a, b) => a + b, 0);
+  const leyenda = document.getElementById('composicion-leyenda');
+  leyenda.innerHTML = composicionData.labels.map((label, i) => {
+    const pct = total > 0 ? Math.round(100 * composicionData.values[i] / total) : 0;
+    return `<div class="d-flex align-items-center justify-content-between mb-1">
+      <div class="d-flex align-items-center gap-2">
+        <div style="width:10px;height:10px;border-radius:50%;background:${COLORS[i]};flex-shrink:0;"></div>
+        <span style="font-size:.82rem;">${label}</span>
+      </div>
+      <span style="font-size:.82rem;font-weight:600;">${composicionData.values[i]} <span class="text-muted fw-normal">(${pct}%)</span></span>
+    </div>`;
+  }).join('');
+} else {
+  document.getElementById('chartComposicion').closest('.card').querySelector('.card-body').innerHTML +=
+    '<p class="text-muted text-center py-3">Sin animales cargados.</p>';
+}
 </script>
 {% endblock %}

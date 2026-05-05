@@ -1,0 +1,297 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block content %}
+<div class="content-wrapper">
+
+  {# Encabezado #}
+  <div class="row">
+    <div class="col-sm-12">
+      <div class="home-tab">
+        <div class="d-sm-flex align-items-center justify-content-between border-bottom pb-3">
+          <div>
+            <h4 class="mb-1">Diagnóstico de preñez</h4>
+            <p class="text-muted mb-0">
+              {{ grupo.nombre }} — {{ grupo.establecimiento.nombre }}
+            </p>
+          </div>
+          <a href="{% url 'grupo_servicio_detalle' grupo.pk %}" class="btn btn-otline-dark">
+            <i class="icon-arrow-left"></i> Volver al grupo
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if messages %}
+  <div class="mt-3">
+    {% for message in messages %}
+    <div class="alert {{ message.tags }} alert-dismissible fade show" role="alert">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {# ── Formulario de encabezado ── #}
+  <div class="row mt-3">
+    <div class="col-12 grid-margin">
+      <div class="card card-rounded">
+        <div class="card-body">
+          <h4 class="card-title card-title-dash">
+            {% if diagnostico %}Datos del diagnóstico{% else %}Crear diagnóstico{% endif %}
+          </h4>
+
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="guardar_encabezado">
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label">Fecha</label>
+                {{ form.fecha }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Método</label>
+                {{ form.metodo }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Veterinario</label>
+                {{ form.veterinario }}
+              </div>
+              <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary text-white w-100">
+                  {% if diagnostico %}Actualizar{% else %}Crear{% endif %}
+                </button>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Observaciones</label>
+                {{ form.observaciones }}
+              </div>
+            </div>
+          </form>
+
+          {% if diagnostico %}
+          <div class="row mt-3 pt-3 border-top">
+            <div class="col-4 col-md-3 text-center">
+              <p class="text-muted small mb-1">Diagnosticadas</p>
+              <h4>{{ diagnostico.total_diagnosticadas }}</h4>
+            </div>
+            <div class="col-4 col-md-3 text-center">
+              <p class="text-muted small mb-1">Preñadas</p>
+              <h4 class="text-success">{{ diagnostico.total_prenadas }}</h4>
+            </div>
+            <div class="col-4 col-md-3 text-center">
+              <p class="text-muted small mb-1">Vacías</p>
+              <h4 class="text-danger">{{ diagnostico.total_vacias }}</h4>
+            </div>
+            <div class="col-12 col-md-3 text-center">
+              <p class="text-muted small mb-1">% Preñez</p>
+              <h4>{{ diagnostico.pct_prenez }}%</h4>
+            </div>
+          </div>
+          {% endif %}
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ── Tabla de resultados por animal ── #}
+  {% if diagnostico %}
+  <div class="row">
+    <div class="col-12 grid-margin">
+      <div class="card card-rounded">
+        <div class="card-body">
+          <h4 class="card-title card-title-dash">Resultados por animal</h4>
+          <p class="card-subtitle card-subtitle-dash mb-3">
+            Hacé clic en el resultado de cada animal. Se guarda automáticamente.
+          </p>
+
+          <div class="table-responsive">
+            <table class="table select-table">
+              <thead>
+                <tr>
+                  <th>Animal</th>
+                  <th>Categoría</th>
+                  <th>Ingreso al grupo</th>
+                  <th>Resultado</th>
+                  <th>Meses gest.</th>
+                  <th>Destino (vacía)</th>
+                  <th class="text-center">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for m in miembros %}
+                {% with r=resultados_existentes|default_if_none:None %}
+                {% with resultado_actual=resultados_existentes|dictsort:"animal_id" %}
+                <tr data-animal-id="{{ m.animal.pk }}" class="fila-animal">
+                  <td>
+                    <h6 class="mb-0">{{ m.animal.caravana_senasa|default:m.animal.tatuaje|default:"—" }}</h6>
+                    <p class="mb-0 text-muted small">{{ m.animal.nombre_apodo|default:"" }}</p>
+                  </td>
+                  <td>{{ m.animal.categoria_actual|default:"—" }}</td>
+                  <td>{{ m.fecha_ingreso|date:"d/m/Y" }}</td>
+                  <td>
+                    <div class="btn-group btn-group-sm" role="group">
+                      {% for val, label in opciones_resultado %}
+                      <button type="button"
+                              class="btn btn-resultado {% if resultados_existentes|get_item:m.animal.pk and resultados_existentes|get_item:m.animal.pk|attr:'resultado' == val %}btn-primary text-white{% else %}btn-outline-secondary{% endif %}"
+                              data-animal-id="{{ m.animal.pk }}"
+                              data-resultado="{{ val }}">
+                        {{ label }}
+                      </button>
+                      {% endfor %}
+                    </div>
+                  </td>
+                  <td>
+                    <input type="number" min="1" max="9"
+                           class="form-control form-control-sm input-meses"
+                           style="width:70px;"
+                           data-animal-id="{{ m.animal.pk }}"
+                           value="{% if resultados_existentes|get_item:m.animal.pk %}{{ resultados_existentes|get_item:m.animal.pk|attr:'meses_gestacion'|default:'' }}{% endif %}"
+                           placeholder="—">
+                  </td>
+                  <td>
+                    <select class="form-select form-select-sm select-destino"
+                            style="min-width:140px;"
+                            data-animal-id="{{ m.animal.pk }}">
+                      <option value="">—</option>
+                      {% for val, label in opciones_destino %}
+                      <option value="{{ val }}"
+                        {% if resultados_existentes|get_item:m.animal.pk and resultados_existentes|get_item:m.animal.pk|attr:'destino_vacia' == val %}selected{% endif %}>
+                        {{ label }}
+                      </option>
+                      {% endfor %}
+                    </select>
+                  </td>
+                  <td class="text-center">
+                    <span class="badge estado-badge
+                      {% if resultados_existentes|get_item:m.animal.pk %}
+                        {% with res=resultados_existentes|get_item:m.animal.pk|attr:'resultado' %}
+                          {% if res == 'PRENADA' %}badge-opacity-success
+                          {% elif res == 'VACIA' %}badge-opacity-danger
+                          {% else %}badge-opacity-warning{% endif %}
+                        {% endwith %}
+                      {% else %}badge-opacity-secondary{% endif %}">
+                      {% if resultados_existentes|get_item:m.animal.pk %}
+                        {{ resultados_existentes|get_item:m.animal.pk|attr:'resultado' }}
+                      {% else %}Pendiente{% endif %}
+                    </span>
+                  </td>
+                </tr>
+                {% endwith %}
+                {% endwith %}
+                {% empty %}
+                <tr>
+                  <td colspan="7" class="text-center text-muted py-4">
+                    No hay animales registrados en este grupo.
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+
+{% block custom_js %}
+<script>
+  var URL_GUARDAR_RESULTADO = "{% url 'vista_diagnostico_grupo' grupo.pk %}";
+  var CSRF_TOKEN = "{{ csrf_token }}";
+
+  function guardarResultado(animalId, resultado, meses, destino) {
+    var $fila  = $('tr[data-animal-id="' + animalId + '"]');
+    var $badge = $fila.find(".estado-badge");
+
+    $.ajax({
+      url:  URL_GUARDAR_RESULTADO,
+      type: "POST",
+      data: {
+        accion:           "guardar_resultado",
+        animal_id:        animalId,
+        resultado:        resultado,
+        meses_gestacion:  meses || "",
+        destino_vacia:    destino || "",
+        csrfmiddlewaretoken: CSRF_TOKEN
+      },
+      dataType: "json",
+      success: function (data) {
+        if (data.ok) {
+          // Actualizar badge
+          $badge.removeClass("badge-opacity-secondary badge-opacity-success badge-opacity-danger badge-opacity-warning");
+          if (resultado === "PRENADA")      $badge.addClass("badge-opacity-success").text("PRENADA");
+          else if (resultado === "VACIA")   $badge.addClass("badge-opacity-danger").text("VACÍA");
+          else                              $badge.addClass("badge-opacity-warning").text("DUDOSA");
+
+          // Actualizar botones activos
+          $fila.find(".btn-resultado")
+               .removeClass("btn-primary text-white")
+               .addClass("btn-outline-secondary");
+          $fila.find('.btn-resultado[data-resultado="' + resultado + '"]')
+               .removeClass("btn-outline-secondary")
+               .addClass("btn-primary text-white");
+
+          // Mostrar/ocultar destino según resultado
+          var $selectDestino = $fila.find(".select-destino").closest("td");
+
+        }
+      },
+      error: function () {
+        alert("Error al guardar el resultado.");
+      }
+    });
+  }
+
+  $(function () {
+    // Clic en botón de resultado
+    $(document).on("click", ".btn-resultado", function () {
+      var animalId  = $(this).data("animal-id");
+      var resultado = $(this).data("resultado");
+      var $fila     = $('tr[data-animal-id="' + animalId + '"]');
+      var meses     = $fila.find(".input-meses").val();
+      var destino   = $fila.find(".select-destino").val();
+      guardarResultado(animalId, resultado, meses, destino);
+    });
+
+    // Cambio en destino (auto-guarda si ya hay resultado)
+    $(document).on("change", ".select-destino", function () {
+      var animalId = $(this).data("animal-id");
+      var $fila    = $('tr[data-animal-id="' + animalId + '"]');
+      var $activo  = $fila.find(".btn-resultado.btn-primary");
+      if ($activo.length) {
+        guardarResultado(
+          animalId,
+          $activo.data("resultado"),
+          $fila.find(".input-meses").val(),
+          $(this).val()
+        );
+      }
+    });
+
+    // Blur en meses (auto-guarda si ya hay resultado)
+    $(document).on("change", ".input-meses", function () {
+      var animalId = $(this).data("animal-id");
+      var $fila    = $('tr[data-animal-id="' + animalId + '"]');
+      var $activo  = $fila.find(".btn-resultado.btn-primary");
+      if ($activo.length) {
+        guardarResultado(
+          animalId,
+          $activo.data("resultado"),
+          $(this).val(),
+          $fila.find(".select-destino").val()
+        );
+      }
+    });
+  });
+</script>
+{% endblock %}
