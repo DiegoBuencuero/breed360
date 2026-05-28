@@ -1,0 +1,403 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block content %}
+<div class="content-wrapper">
+
+  <div class="d-sm-flex align-items-center justify-content-between border-bottom pb-3 mb-4">
+    <div>
+      <h4 class="mb-1">Nuevo grupo de servicio reproductivo</h4>
+      <p class="text-muted mb-0 small">Completá los datos y seleccioná las hembras para el grupo.</p>
+    </div>
+    <a href="{% url 'grupo_servicio_crear' %}" class="btn btn-otline-dark btn-sm">
+      <i class="mdi mdi-arrow-left"></i> Volver
+    </a>
+  </div>
+
+  <form method="post" id="form-grupo">
+    {% csrf_token %}
+    <input type="hidden" name="animal_ids" id="hidden-animal-ids">
+
+    {# ── Datos del grupo ── #}
+    <div class="card card-rounded mb-4">
+      <div class="card-body">
+        <h5 class="card-title card-title-dash mb-3">Datos del grupo</h5>
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="row g-3">
+          <div class="col-lg-4 col-md-6">
+            <label class="form-label fw-semibold small">Establecimiento <span class="text-danger">*</span></label>
+            {{ form.establecimiento }}
+            {% if form.establecimiento.errors %}<div class="text-danger small">{{ form.establecimiento.errors }}</div>{% endif %}
+          </div>
+          <div class="col-lg-5 col-md-6">
+            <label class="form-label fw-semibold small">Nombre del grupo <span class="text-danger">*</span></label>
+            {{ form.nombre }}
+            {% if form.nombre.errors %}<div class="text-danger small">{{ form.nombre.errors }}</div>{% endif %}
+          </div>
+          <div class="col-lg-3 col-md-4">
+            <label class="form-label fw-semibold small">Tipo de servicio <span class="text-danger">*</span></label>
+            {{ form.tipo_servicio }}
+            {% if form.tipo_servicio.errors %}<div class="text-danger small">{{ form.tipo_servicio.errors }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div class="row g-3 mt-1">
+          <div class="col-lg-3 col-md-4">
+            <label class="form-label fw-semibold small">Fecha inicio <span class="text-danger">*</span></label>
+            {{ form.fecha_inicio }}
+            {% if form.fecha_inicio.errors %}<div class="text-danger small">{{ form.fecha_inicio.errors }}</div>{% endif %}
+          </div>
+          <div class="col-lg-3 col-md-4">
+            <label class="form-label fw-semibold small">Fecha fin prevista</label>
+            {{ form.fecha_fin_prevista }}
+            {% if form.fecha_fin_prevista.errors %}<div class="text-danger small">{{ form.fecha_fin_prevista.errors }}</div>{% endif %}
+          </div>
+          <div class="col-lg-6 col-md-8">
+            <label class="form-label fw-semibold small">Observaciones</label>
+            {{ form.observaciones }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# ── Filtro visual de hijas ── #}
+    <div class="card card-rounded mb-4" id="panel-filtro-hijas" style="display:none;">
+      <div class="card-body">
+        <h5 class="card-title card-title-dash mb-1">Marcar hijas directas</h5>
+        <p class="text-muted small mb-3">
+          Seleccioná uno o más toros para que sus hijas aparezcan resaltadas en amarillo en la grilla.
+          Esto no excluye automáticamente a ningún animal — podés decidirlo vos.
+        </p>
+        <div class="row g-3">
+          <div class="col-lg-6">
+            <label class="form-label fw-semibold small">Toro(s) a filtrar</label>
+            <select id="sel-padres-filtro" class="form-control" multiple style="height:120px;">
+              {% for p in padres %}
+              <option value="{{ p.id }}">{{ p.nombre }} ({{ p.codigo }})</option>
+              {% endfor %}
+            </select>
+            <small class="text-muted">Ctrl+clic para seleccionar varios</small>
+          </div>
+          <div class="col-lg-6 d-flex align-items-end">
+            <button type="button" class="btn btn-otline-dark btn-sm" id="btn-marcar-hijas">
+              <i class="mdi mdi-cow me-1"></i> Marcar hijas
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# ── Selección de animales ── #}
+    <div id="seccion-animales" style="display:none;">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+          <h5 class="mb-0">Hembras disponibles</h5>
+          <p class="text-muted small mb-0">
+            <span style="display:inline-block;width:14px;height:14px;background:#eaf4eb;border:2px solid #5cb85c;border-radius:3px;"></span> Cumple filtros ·
+            <span style="display:inline-block;width:14px;height:14px;background:#fff8e1;border:2px solid #f0ad4e;border-radius:3px;"></span> Hija directa ·
+            <span style="display:inline-block;width:14px;height:14px;background:#f5f5f5;border:2px solid #aaa;border-radius:3px;"></span> No cumple filtros
+          </p>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+          <span class="text-muted small">
+            Seleccionadas: <strong id="count-sel">0</strong> / <strong id="count-total">0</strong>
+          </span>
+          <button type="button" class="btn btn-otline-dark btn-sm" id="btn-todos">Todas</button>
+          <button type="button" class="btn btn-otline-dark btn-sm" id="btn-solo-aptas">Solo aptas</button>
+          <button type="button" class="btn btn-otline-dark btn-sm" id="btn-ninguno">Ninguna</button>
+        </div>
+      </div>
+      <div id="contenedor-rodeos" class="row g-3 mb-4"></div>
+    </div>
+
+    <div id="msg-sin-estab" class="text-center text-muted py-5">
+      <i class="mdi mdi-cow mdi-48px d-block mb-2 opacity-25"></i>
+      Seleccioná un establecimiento para ver las hembras disponibles.
+    </div>
+    <div id="msg-cargando" class="text-center text-muted py-4" style="display:none;">
+      <i class="mdi mdi-loading mdi-spin"></i> Cargando animales…
+    </div>
+
+    <div class="alert alert-danger d-none" id="error-guardar"></div>
+
+    <div class="d-flex gap-2 justify-content-end mt-2">
+      <a href="{% url 'grupo_servicio_crear' %}" class="btn btn-otline-dark">Cancelar</a>
+      <button type="submit" class="btn btn-primary text-white" id="btn-guardar">
+        <i class="mdi mdi-check"></i> Crear grupo
+      </button>
+    </div>
+
+  </form>
+
+</div>
+{% endblock %}
+
+
+{% block custom_js %}
+<style>
+  .rodeo-card { border-radius: 12px; border: 1px solid #e8edf2; }
+  .rodeo-card .card-header { background: #f8fafc; border-radius: 12px 12px 0 0; border-bottom: 1px solid #e8edf2; }
+
+  .vaca-chip {
+    display: inline-flex; flex-direction: column; align-items: center;
+    width: 80px; padding: 8px 4px 6px;
+    border-radius: 10px; border: 2px solid transparent;
+    cursor: pointer; transition: all .15s; position: relative;
+    font-size: 11px; line-height: 1.3; text-align: center;
+  }
+  .vaca-chip.apta.sel    { background: #eaf4eb; border-color: #5cb85c; color: #2d6a2d; }
+  .vaca-chip.hija.sel    { background: #fff8e1; border-color: #f0ad4e; color: #7a5000; }
+  .vaca-chip.no-apta.sel { background: #f5f5f5; border-color: #aaa;    color: #555; }
+  .vaca-chip.desel       { background: #fafafa; border-color: #ddd;    color: #bbb; text-decoration: line-through; }
+  .vaca-chip .vaca-ico   { font-size: 20px; margin-bottom: 1px; }
+  .vaca-chip .vaca-num   { font-weight: 600; word-break: break-all; }
+  .vaca-chip .vaca-padre { font-size: 9px; opacity: .75; word-break: break-all; margin-top: 1px; }
+  .vaca-chip .vaca-warn  { position: absolute; top: 3px; right: 4px; font-size: 11px; }
+  .grilla-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+</style>
+
+<script>
+const URL_ANIMALES = "{% url 'ajax_animales_para_nuevo_grupo' %}";
+const URL_CONFIG   = "{% url 'ajax_config_filtro_establecimiento' %}";
+
+const $estab      = $("#{{ form.establecimiento.id_for_label }}");
+const $seccion    = $("#seccion-animales");
+const $sinEstab   = $("#msg-sin-estab");
+const $cargando   = $("#msg-cargando");
+const $contenedor = $("#contenedor-rodeos");
+const $countSel   = $("#count-sel");
+const $countTotal = $("#count-total");
+const $hidden     = $("#hidden-animal-ids");
+const $error      = $("#error-guardar");
+
+// Datos actuales de animales para re-marcar hijas sin recargar
+let datosAnimales = [];
+
+// ── Disparar carga si el establecimiento ya tiene valor al cargar la página ──
+$(function() {
+  if ($estab.val()) $estab.trigger("change");
+});
+
+// ── Cargar animales al cambiar establecimiento ──────────────
+$estab.on("change", function() {
+  const estabId = $(this).val();
+  $seccion.hide();
+  $contenedor.empty();
+  datosAnimales = [];
+  if (!estabId) {
+    $sinEstab.show();
+    $("#panel-filtro-hijas").hide();
+    return;
+  }
+  $sinEstab.hide();
+  $cargando.show();
+
+  // Primero carga config, luego animales
+  $.getJSON(URL_CONFIG, { establecimiento: estabId }, function(cfg) {
+    cargarAnimales(estabId, cfg);
+  }).fail(function() {
+    cargarAnimales(estabId, null);
+  });
+});
+
+function cargarAnimales(estabId, cfg) {
+  const params = {
+    establecimiento:      estabId,
+    dias_minimos_posparto: cfg ? (cfg.dias_minimos_posparto || 45) : 45,
+    excluir_prenadas:     cfg ? (cfg.excluir_prenadas !== false ? "true" : "false") : "true",
+    edad_minima_dias:     cfg && cfg.edad_minima_dias ? cfg.edad_minima_dias : "",
+    peso_minimo_kg:       cfg && cfg.peso_minimo_kg   ? cfg.peso_minimo_kg   : "",
+  };
+
+  $.getJSON(URL_ANIMALES, params, function(data) {
+    $cargando.hide();
+    if (!data.rodeos || !data.rodeos.length) {
+      $sinEstab.text("No hay hembras disponibles para este establecimiento.").show();
+      return;
+    }
+    datosAnimales = data.rodeos;
+    renderRodeos(data.rodeos);
+    $seccion.show();
+    $("#panel-filtro-hijas").show();
+  }).fail(function() {
+    $cargando.hide();
+    $sinEstab.text("Error al cargar animales. Intentá de nuevo.").show();
+  });
+}
+
+function chipClass(a) {
+  if (a.es_hija_directa) return "hija";
+  if (a.cumple_filtros)  return "apta";
+  return "no-apta";
+}
+
+function renderRodeos(rodeos) {
+  $contenedor.empty();
+  rodeos.forEach(function(r) {
+    const chips = r.animales.map(function(a) {
+      const cls   = chipClass(a);
+      const warn  = a.es_hija_directa
+        ? '<span class="vaca-warn" title="Hija directa del toro seleccionado">⚠️</span>'
+        : (!a.cumple_filtros ? '<span class="vaca-warn text-danger" title="' + (a.motivos_no_cumple||[]).join(", ") + '"><i class="mdi mdi-alert-circle-outline"></i></span>' : "");
+      const padreLabel = a.padre_nombre
+        ? `<div class="vaca-padre" title="Padre: ${a.padre_nombre}">${a.padre_codigo || a.padre_nombre}</div>`
+        : "";
+      const tooltip = [
+        a.es_hija_directa ? "⚠️ Hija directa" : "",
+        a.padre_nombre    ? `Padre: ${a.padre_nombre}` : "",
+        ...(a.motivos_no_cumple || []),
+      ].filter(Boolean).join(" · ") || "OK";
+      return `<div class="vaca-chip ${cls} sel" data-animal-id="${a.id}" title="${tooltip}">
+        ${warn}
+        <i class="mdi mdi-cow vaca-ico"></i>
+        <div class="vaca-num">${a.identificador}</div>
+        ${padreLabel}
+      </div>`;
+    }).join("");
+
+    const rodeoId = r.rodeo.replace(/\W/g, "_");
+    $contenedor.append(`
+      <div class="col-12 col-md-6 col-xl-4">
+        <div class="card rodeo-card h-100">
+          <div class="card-header d-flex align-items-center justify-content-between py-2 px-3">
+            <div class="d-flex align-items-center gap-2">
+              <input type="checkbox" class="form-check-input chk-rodeo mt-0" checked
+                     data-rodeo="${r.rodeo}" id="chk_${rodeoId}">
+              <label class="fw-semibold mb-0 small" for="chk_${rodeoId}">${r.rodeo}</label>
+            </div>
+            <span class="badge bg-secondary rodeo-badge">${r.animales.length}/${r.animales.length}</span>
+          </div>
+          <div class="card-body p-3">
+            <div class="grilla-chips">${chips}</div>
+          </div>
+        </div>
+      </div>`);
+  });
+
+  // Deseleccionar hijas directas por defecto
+  $contenedor.find(".vaca-chip.hija").removeClass("sel").addClass("desel");
+  actualizarTodo();
+}
+
+// ── Marcar hijas desde el selector de toros ─────────────────
+$("#btn-marcar-hijas").on("click", function() {
+  const selPadres = $("#sel-padres-filtro").val() || [];
+  if (!selPadres.length) {
+    alert("Seleccioná al menos un toro para marcar sus hijas.");
+    return;
+  }
+  const estabId = $estab.val();
+  if (!estabId) return;
+
+  // Recarga con los padres seleccionados (solo el primero en el backend por ahora;
+  // para múltiples hacemos N llamadas y unimos los IDs)
+  const promises = selPadres.map(function(padreId) {
+    return $.getJSON(URL_ANIMALES, {
+      establecimiento: estabId,
+      padre: padreId,
+      dias_minimos_posparto: 0,
+      excluir_prenadas: "false",
+    });
+  });
+
+  $.when.apply($, promises).done(function() {
+    const results = selPadres.length === 1 ? [arguments[0]] : Array.from(arguments).map(a => a[0]);
+    const hijasIds = new Set();
+    results.forEach(function(data) {
+      (data.rodeos||[]).forEach(function(r) {
+        r.animales.forEach(function(a) {
+          if (a.es_hija_directa) hijasIds.add(String(a.id));
+        });
+      });
+    });
+
+    // Reclasificar chips existentes
+    $contenedor.find(".vaca-chip").each(function() {
+      const $c = $(this);
+      const id = String($c.data("animal-id"));
+      if (hijasIds.has(id)) {
+        $c.removeClass("apta no-apta").addClass("hija");
+        if (!$c.find(".vaca-warn").length) {
+          $c.prepend('<span class="vaca-warn" title="Hija directa">⚠️</span>');
+        }
+      }
+    });
+  });
+});
+
+// ── Clicks y checkboxes ─────────────────────────────────────
+$contenedor.on("click", ".vaca-chip", function() {
+  $(this).toggleClass("sel desel");
+  actualizarRodeoBadge($(this).closest(".card"));
+  actualizarCount();
+});
+
+$contenedor.on("change", ".chk-rodeo", function() {
+  const card = $(this).closest(".card");
+  if (this.checked) card.find(".vaca-chip").removeClass("desel").addClass("sel");
+  else              card.find(".vaca-chip").removeClass("sel").addClass("desel");
+  actualizarRodeoBadge(card);
+  actualizarCount();
+});
+
+$("#btn-todos").on("click", function() {
+  $contenedor.find(".vaca-chip").removeClass("desel").addClass("sel");
+  $contenedor.find(".chk-rodeo").prop("checked", true).prop("indeterminate", false);
+  $contenedor.find(".card").each(function() { actualizarRodeoBadge($(this)); });
+  actualizarCount();
+});
+
+$("#btn-solo-aptas").on("click", function() {
+  $contenedor.find(".vaca-chip").removeClass("sel").addClass("desel");
+  $contenedor.find(".vaca-chip.apta").removeClass("desel").addClass("sel");
+  $contenedor.find(".card").each(function() { actualizarRodeoBadge($(this)); });
+  actualizarCount();
+});
+
+$("#btn-ninguno").on("click", function() {
+  $contenedor.find(".vaca-chip").removeClass("sel").addClass("desel");
+  $contenedor.find(".chk-rodeo").prop("checked", false).prop("indeterminate", false);
+  $contenedor.find(".card").each(function() { actualizarRodeoBadge($(this)); });
+  actualizarCount();
+});
+
+function actualizarRodeoBadge(card) {
+  const sel   = card.find(".vaca-chip.sel").length;
+  const total = card.find(".vaca-chip").length;
+  card.find(".rodeo-badge").text(sel + "/" + total);
+  card.find(".chk-rodeo").prop("checked", sel > 0).prop("indeterminate", sel > 0 && sel < total);
+}
+
+function actualizarCount() {
+  const sel   = $contenedor.find(".vaca-chip.sel").length;
+  const total = $contenedor.find(".vaca-chip").length;
+  $countSel.text(sel); $countTotal.text(total);
+}
+
+function actualizarTodo() {
+  $contenedor.find(".card").each(function() { actualizarRodeoBadge($(this)); });
+  actualizarCount();
+}
+
+// ── Submit ──────────────────────────────────────────────────
+$("#form-grupo").on("submit", function(e) {
+  const selIds = $contenedor.find(".vaca-chip.sel").map(function() {
+    return $(this).data("animal-id");
+  }).get();
+
+  // Solo validar animales si la sección ya fue cargada
+  if (!selIds.length && $seccion.is(":visible")) {
+    e.preventDefault();
+    $error.text("Seleccioná al menos un animal antes de guardar.").removeClass("d-none");
+    $("html, body").animate({ scrollTop: $error.offset().top - 80 }, 300);
+    return;
+  }
+  $hidden.val(selIds.join(","));
+  $error.addClass("d-none");
+});
+</script>
+{% endblock %}

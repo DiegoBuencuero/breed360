@@ -4,41 +4,22 @@
 
 {% block plugin_css %}
 <style>
-    .table thead th {
-        font-weight: 600;
-        font-size: 0.85rem;
-        color: #4b5563;
-        white-space: nowrap;
-    }
-
+    .table thead th { font-weight: 600; font-size: 0.85rem; color: #4b5563; white-space: nowrap; }
     .badge-estado-activo {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 0.45rem 0.7rem;
-        border-radius: 50rem;
-        background-color: rgba(40, 167, 69, 0.12);
-        color: #2e7d32;
-        border: 1px solid rgba(40, 167, 69, 0.25);
-        font-weight: 600;
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: .35rem .65rem; border-radius: 50rem;
+        background: rgba(40,167,69,.12); color: #2e7d32;
+        border: 1px solid rgba(40,167,69,.25); font-weight: 600; font-size: .78rem;
     }
-
     .badge-estado-inactivo {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 0.45rem 0.7rem;
-        border-radius: 50rem;
-        background-color: rgba(108, 117, 125, 0.12);
-        color: #5f6b73;
-        border: 1px solid rgba(108, 117, 125, 0.25);
-        font-weight: 600;
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: .35rem .65rem; border-radius: 50rem;
+        background: rgba(108,117,125,.12); color: #5f6b73;
+        border: 1px solid rgba(108,117,125,.25); font-weight: 600; font-size: .78rem;
     }
-
-    .btn-ver-bovino {
-        border-radius: 50rem;
-        font-weight: 500;
-    }
+    .btn-ver-bovino { border-radius: 50rem; font-weight: 500; }
+    .filtros-bar select, .filtros-bar input[type=text] { font-size: .84rem; }
+    .filtros-bar .form-select, .filtros-bar .form-control { height: 34px; padding-top: .3rem; padding-bottom: .3rem; }
 </style>
 {% endblock %}
 
@@ -70,24 +51,98 @@
                     <i class="mdi mdi-cow icon-agro me-1"></i>
                     {% translate "Bovinos" %}
                 </h3>
-                <div class="small text-muted">
-                    <h6 class="mb-1 mt-2">
-                        {% translate "Gestión de bovinos" %}
-                    </h6>
-                </div>
+                <div class="small text-muted">{% translate "Gestión de bovinos" %}</div>
             </div>
+            <a href="{% url 'vista_crear_bovino' %}" class="btn btn-success">
+                <i class="mdi mdi-plus-circle-outline me-2"></i>{% translate "Nuevo bovino" %}
+            </a>
+        </div>
 
-            <div>
-                <a href="{% url 'vista_crear_bovino' %}" class="btn btn-success">
-                    <i class="mdi mdi-plus-circle-outline me-2"></i>
-                    {% translate "Nuevo bovino" %}
-                </a>
-            </div>
+        {# ── Barra de filtros ── #}
+        <div class="card card-rounded mb-3">
+          <div class="card-body py-2 px-3">
+            <form method="get" class="filtros-bar">
+              <div class="row g-2 align-items-end">
+
+                <div class="col-12 col-md-3 col-lg-3">
+                  <label class="form-label mb-1 small fw-semibold">Buscar</label>
+                  <input type="text" name="q" value="{{ filtros.q }}" class="form-control"
+                         placeholder="Caravana, tatuaje, apodo…">
+                </div>
+
+                <div class="col-6 col-md-2">
+                  <label class="form-label mb-1 small fw-semibold">Establecimiento</label>
+                  <select name="establecimiento" class="form-select" id="flt-estab">
+                    <option value="">Todos</option>
+                    {% for e in establecimientos_opt %}
+                    <option value="{{ e.id }}" {% if filtros.establecimiento == e.id|stringformat:"s" %}selected{% endif %}>{{ e.nombre }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="col-6 col-md-2">
+                  <label class="form-label mb-1 small fw-semibold">Rodeo</label>
+                  <select name="rodeo" class="form-select" id="flt-rodeo">
+                    <option value="">Todos</option>
+                    {% for r in rodeos_opt %}
+                    <option value="{{ r.id }}"
+                            data-estab="{{ r.establecimiento_id }}"
+                            {% if filtros.rodeo == r.id|stringformat:"s" %}selected{% endif %}>
+                      {{ r.nombre }}
+                    </option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="col-6 col-md-2">
+                  <label class="form-label mb-1 small fw-semibold">Categoría</label>
+                  <select name="categoria" class="form-select">
+                    <option value="">Todas</option>
+                    {% for c in categorias_opt %}
+                    <option value="{{ c.id }}" {% if filtros.categoria == c.id|stringformat:"s" %}selected{% endif %}>{{ c.nombre }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="col-6 col-md-1">
+                  <label class="form-label mb-1 small fw-semibold">Sexo</label>
+                  <select name="sexo" class="form-select">
+                    <option value="">Todos</option>
+                    {% for val, label in sexo_choices %}
+                    <option value="{{ val }}" {% if filtros.sexo == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="col-6 col-md-1">
+                  <label class="form-label mb-1 small fw-semibold">Estado</label>
+                  <select name="activo" class="form-select">
+                    <option value=""  {% if filtros.activo == "" %}selected{% endif %}>Todos</option>
+                    <option value="1" {% if filtros.activo == "1" %}selected{% endif %}>Activo</option>
+                    <option value="0" {% if filtros.activo == "0" %}selected{% endif %}>Inactivo</option>
+                  </select>
+                </div>
+
+                <div class="col-6 col-md-1 d-flex gap-1">
+                  <button type="submit" class="btn btn-primary btn-sm w-100">
+                    <i class="mdi mdi-magnify"></i>
+                  </button>
+                  <a href="{% url 'vista_lista_bovinos' %}" class="btn btn-otline-dark btn-sm" title="Limpiar filtros">
+                    <i class="mdi mdi-close"></i>
+                  </a>
+                </div>
+
+              </div>
+            </form>
+          </div>
         </div>
 
         <div class="col-lg-12 grid-margin stretch-card">
             <div class="card">
                 <div class="card-body">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small">{{ total }} animal{% if total != 1 %}es{% endif %} encontrado{% if total != 1 %}s{% endif %}</span>
+                  </div>
                     <div id="contenedor-tabla-bovinos">
                         <div class="table-responsive">
                             <table class="table table-striped align-middle">
@@ -157,4 +212,33 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block custom_js %}
+<script>
+// Filtrar rodeos según establecimiento seleccionado
+const $fltEstab = $("#flt-estab");
+const $fltRodeo = $("#flt-rodeo");
+const allRodeos = $fltRodeo.find("option[data-estab]").clone();
+
+function filtrarRodeos() {
+  const estabId = $fltEstab.val();
+  const curVal  = $fltRodeo.val();
+  $fltRodeo.find("option[data-estab]").remove();
+  if (!estabId) {
+    $fltRodeo.append(allRodeos.clone());
+  } else {
+    allRodeos.each(function() {
+      if ($(this).data("estab") == estabId) $fltRodeo.append($(this).clone());
+    });
+  }
+  $fltRodeo.val(curVal);
+}
+
+$fltEstab.on("change", function() {
+  $fltRodeo.val("");
+  filtrarRodeos();
+});
+filtrarRodeos();
+</script>
 {% endblock %}

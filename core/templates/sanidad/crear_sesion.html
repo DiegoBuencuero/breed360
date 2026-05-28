@@ -1,0 +1,334 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block content %}
+<div class="content-wrapper">
+
+  <div class="d-sm-flex align-items-center justify-content-between border-bottom pb-3 mb-4">
+    <div>
+      <h4 class="mb-1">Nueva sesión sanitaria</h4>
+      <p class="text-muted mb-0 small">Completá los datos del evento, revisá los animales y sacá los que no aplican.</p>
+    </div>
+    <a href="{% url 'vista_lista_sesiones_sanitarias' %}" class="btn btn-otline-dark btn-sm">
+      <i class="mdi mdi-arrow-left"></i> Volver
+    </a>
+  </div>
+
+  <form method="post" id="form-sesion">
+    {% csrf_token %}
+    <input type="hidden" name="animal_ids" id="hidden-animal-ids">
+
+    {# ── Formulario horizontal compacto ── #}
+    <div class="card card-rounded mb-4">
+      <div class="card-body">
+        <h5 class="card-title card-title-dash mb-3">Datos del evento</h5>
+
+        <div class="row g-3">
+          <div class="col-lg-3 col-md-6">
+            <label class="form-label fw-semibold small">Establecimiento <span class="text-danger">*</span></label>
+            {{ form.establecimiento }}
+            {% if form.establecimiento.errors %}
+              <div class="text-danger small">{{ form.establecimiento.errors }}</div>
+            {% endif %}
+          </div>
+          <div class="col-lg-2 col-md-4">
+            <label class="form-label fw-semibold small">Fecha <span class="text-danger">*</span></label>
+            {{ form.fecha }}
+            {% if form.fecha.errors %}
+              <div class="text-danger small">{{ form.fecha.errors }}</div>
+            {% endif %}
+          </div>
+          <div class="col-lg-2 col-md-4">
+            <label class="form-label fw-semibold small">Tipo <span class="text-danger">*</span></label>
+            {{ form.tipo_sanitario }}
+          </div>
+          <div class="col-lg-5 col-md-6">
+            <label class="form-label fw-semibold small">Nombre del evento <span class="text-danger">*</span></label>
+            {{ form.nombre_evento }}
+            {% if form.nombre_evento.errors %}
+              <div class="text-danger small">{{ form.nombre_evento.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="row g-3 mt-1">
+          <div class="col-lg-3 col-md-6">
+            <label class="form-label fw-semibold small">Insumo / Producto</label>
+            {{ form.insumo }}
+          </div>
+          <div class="col-lg-2 col-md-4">
+            <label class="form-label fw-semibold small">Dosis</label>
+            {{ form.dosis }}
+          </div>
+          <div class="col-lg-2 col-md-4">
+            <label class="form-label fw-semibold small">Lote</label>
+            {{ form.lote }}
+          </div>
+          <div class="col-lg-2 col-md-4">
+            <label class="form-label fw-semibold small">Vía de administración</label>
+            {{ form.via_admin }}
+          </div>
+          <div class="col-lg-3 col-md-6 d-flex align-items-end">
+            <div>
+              <div class="form-check mb-1">
+                {{ form.requiere_refuerzo }}
+                <label class="form-check-label small" for="{{ form.requiere_refuerzo.id_for_label }}">
+                  Requiere refuerzo
+                </label>
+              </div>
+              <div id="fila-refuerzo" style="display:none;">
+                {{ form.dias_hasta_refuerzo }}
+                {% if form.dias_hasta_refuerzo.errors %}
+                  <div class="text-danger small">{{ form.dias_hasta_refuerzo.errors }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-3 mt-1">
+          <div class="col-12">
+            <label class="form-label fw-semibold small">Observaciones</label>
+            {{ form.observaciones }}
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    {# ── Selección de animales por rodeo ── #}
+    <div id="seccion-animales" style="display:none;">
+
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+          <h5 class="mb-0">Animales a incluir</h5>
+          <p class="text-muted small mb-0">
+            Todos los animales están seleccionados. Tocá los que <strong>no</strong> deben recibir el evento para quitarlos.
+          </p>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+          <span class="text-muted small">
+            Seleccionados: <strong id="count-sel">0</strong> / <strong id="count-total">0</strong>
+          </span>
+          <button type="button" class="btn btn-otline-dark btn-sm" id="btn-todos">Todos</button>
+          <button type="button" class="btn btn-otline-dark btn-sm" id="btn-ninguno">Ninguno</button>
+        </div>
+      </div>
+
+      {# Tarjetas por rodeo (se generan con JS) #}
+      <div id="contenedor-rodeos" class="row g-3 mb-4"></div>
+
+    </div>
+
+    {# Placeholder mientras no hay establecimiento #}
+    <div id="msg-sin-estab" class="text-center text-muted py-5">
+      <i class="mdi mdi-cow mdi-48px d-block mb-2 opacity-25"></i>
+      Seleccioná un establecimiento para ver los animales.
+    </div>
+
+    <div id="msg-cargando" class="text-center text-muted py-4" style="display:none;">
+      <i class="mdi mdi-loading mdi-spin"></i> Cargando animales…
+    </div>
+
+    {# Errores y acciones #}
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="alert alert-danger d-none" id="error-guardar"></div>
+
+    <div class="d-flex gap-2 justify-content-end mt-2">
+      <a href="{% url 'vista_lista_sesiones_sanitarias' %}" class="btn btn-otline-dark">Cancelar</a>
+      <button type="submit" class="btn btn-primary text-white" id="btn-guardar">
+        <i class="mdi mdi-check"></i> Guardar sesión
+      </button>
+    </div>
+
+  </form>
+
+</div>
+{% endblock %}
+
+
+{% block custom_js %}
+<style>
+  .rodeo-card { border-radius: 12px; border: 1px solid #e8edf2; }
+  .rodeo-card .card-header { background: #f8fafc; border-radius: 12px 12px 0 0; border-bottom: 1px solid #e8edf2; }
+
+  .vaca-chip {
+    display: inline-flex; flex-direction: column; align-items: center;
+    width: 72px; padding: 8px 4px 6px;
+    border-radius: 10px; border: 2px solid transparent;
+    cursor: pointer; transition: all .15s; position: relative;
+    font-size: 11px; line-height: 1.2; text-align: center;
+    background: #eaf4eb; border-color: #5cb85c; color: #2d6a2d;
+  }
+  .vaca-chip.desel {
+    background: #f5f5f5; border-color: #ccc; color: #aaa;
+    text-decoration: line-through;
+  }
+  .vaca-chip .vaca-ico { font-size: 22px; margin-bottom: 2px; }
+  .vaca-chip .vaca-num { font-weight: 600; word-break: break-all; }
+  .vaca-chip .vaca-x {
+    position: absolute; top: 3px; right: 4px;
+    font-size: 13px; line-height: 1; color: #999;
+    display: none;
+  }
+  .vaca-chip.desel .vaca-x { display: block; color: #ccc; }
+  .grilla-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+</style>
+
+<script>
+const URL_ANIMALES = "{% url 'ajax_animales_para_sesion' %}";
+
+const $estab       = $("#id_establecimiento");
+const $seccion     = $("#seccion-animales");
+const $sinEstab    = $("#msg-sin-estab");
+const $cargando    = $("#msg-cargando");
+const $contenedor  = $("#contenedor-rodeos");
+const $countSel    = $("#count-sel");
+const $countTotal  = $("#count-total");
+const $hidden      = $("#hidden-animal-ids");
+const $error       = $("#error-guardar");
+
+// ── Refuerzo toggle ──────────────────────────────────────────
+$("#{{ form.requiere_refuerzo.id_for_label }}").on("change", function() {
+  $("#fila-refuerzo").toggle(this.checked);
+}).trigger("change");
+
+// ── Cargar animales al cambiar establecimiento ───────────────
+$estab.on("change", function() {
+  const estabId = $(this).val();
+  $seccion.hide();
+  $contenedor.empty();
+  if (!estabId) { $sinEstab.show(); return; }
+
+  $sinEstab.hide();
+  $cargando.show();
+
+  $.getJSON(URL_ANIMALES, { establecimiento: estabId }, function(data) {
+    $cargando.hide();
+    if (!data.animales || !data.animales.length) {
+      $sinEstab.text("Este establecimiento no tiene animales.").show();
+      return;
+    }
+    renderRodeos(data.animales);
+    $seccion.show();
+  }).fail(function() {
+    $cargando.hide();
+    $sinEstab.text("Error al cargar animales. Intentá de nuevo.").show();
+  });
+});
+
+// ── Agrupar animales por rodeo y renderizar tarjetas ─────────
+function renderRodeos(animales) {
+  // Agrupar
+  const grupos = {};
+  animales.forEach(a => {
+    const r = a.rodeo || "Sin rodeo";
+    if (!grupos[r]) grupos[r] = [];
+    grupos[r].push(a);
+  });
+
+  $contenedor.empty();
+  Object.keys(grupos).forEach(rodeo => {
+    const lista = grupos[rodeo];
+    const chips = lista.map(a =>
+      `<div class="vaca-chip sel" data-animal-id="${a.id}" title="${a.caravana}">
+        <span class="vaca-x"><i class="mdi mdi-close"></i></span>
+        <i class="mdi mdi-cow vaca-ico"></i>
+        <div class="vaca-num">${a.caravana}</div>
+      </div>`
+    ).join("");
+
+    const col = $(
+      `<div class="col-12 col-md-6 col-xl-4">
+        <div class="card rodeo-card h-100">
+          <div class="card-header d-flex align-items-center justify-content-between py-2 px-3">
+            <div class="d-flex align-items-center gap-2">
+              <input type="checkbox" class="form-check-input chk-rodeo mt-0" checked
+                     data-rodeo="${rodeo}" id="chk_rodeo_${rodeo.replace(/\s/g,'_')}">
+              <label class="fw-semibold mb-0 small" for="chk_rodeo_${rodeo.replace(/\s/g,'_')}">
+                ${rodeo}
+              </label>
+            </div>
+            <span class="badge bg-secondary rodeo-badge">${lista.length}</span>
+          </div>
+          <div class="card-body p-3">
+            <div class="grilla-chips">${chips}</div>
+          </div>
+        </div>
+      </div>`
+    );
+    $contenedor.append(col);
+  });
+
+  actualizarCount();
+}
+
+// ── Click en chip individual ─────────────────────────────────
+$contenedor.on("click", ".vaca-chip", function() {
+  $(this).toggleClass("sel desel");
+  const rodeo = $(this).closest("[data-rodeo]").attr("data-rodeo") ||
+                $(this).closest(".card").find(".chk-rodeo").data("rodeo");
+  actualizarRodeoBadge($(this).closest(".card"));
+  actualizarCount();
+});
+
+// ── Check de rodeo completo ──────────────────────────────────
+$contenedor.on("change", ".chk-rodeo", function() {
+  const card = $(this).closest(".card");
+  if (this.checked) {
+    card.find(".vaca-chip").removeClass("desel").addClass("sel");
+  } else {
+    card.find(".vaca-chip").removeClass("sel").addClass("desel");
+  }
+  actualizarRodeoBadge(card);
+  actualizarCount();
+});
+
+function actualizarRodeoBadge(card) {
+  const sel   = card.find(".vaca-chip.sel").length;
+  const total = card.find(".vaca-chip").length;
+  card.find(".rodeo-badge").text(sel + "/" + total);
+  card.find(".chk-rodeo").prop("checked", sel > 0).prop("indeterminate", sel > 0 && sel < total);
+}
+
+// ── Todos / Ninguno global ───────────────────────────────────
+$("#btn-todos").on("click", function() {
+  $contenedor.find(".vaca-chip").removeClass("desel").addClass("sel");
+  $contenedor.find(".chk-rodeo").prop("checked", true).prop("indeterminate", false);
+  $contenedor.find(".card").each(function() { actualizarRodeoBadge($(this)); });
+  actualizarCount();
+});
+$("#btn-ninguno").on("click", function() {
+  $contenedor.find(".vaca-chip").removeClass("sel").addClass("desel");
+  $contenedor.find(".chk-rodeo").prop("checked", false).prop("indeterminate", false);
+  $contenedor.find(".card").each(function() { actualizarRodeoBadge($(this)); });
+  actualizarCount();
+});
+
+function actualizarCount() {
+  const sel   = $contenedor.find(".vaca-chip.sel").length;
+  const total = $contenedor.find(".vaca-chip").length;
+  $countSel.text(sel);
+  $countTotal.text(total);
+}
+
+// ── Submit ───────────────────────────────────────────────────
+$("#form-sesion").on("submit", function(e) {
+  const selIds = $contenedor.find(".vaca-chip.sel").map(function(){
+    return $(this).data("animal-id");
+  }).get();
+
+  if (!selIds.length) {
+    e.preventDefault();
+    $error.text("Seleccioná al menos un animal antes de guardar.").removeClass("d-none");
+    $("html, body").animate({ scrollTop: $error.offset().top - 80 }, 300);
+    return;
+  }
+  $hidden.val(selIds.join(","));
+  $error.addClass("d-none");
+});
+</script>
+{% endblock %}

@@ -42,16 +42,98 @@
     </div>
   </div>
 
+  {# ================= LISTA DE GRUPOS ================= #}
+  <div class="row mt-4">
+    <div class="col-sm-12">
+      <div class="card card-rounded">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+              <h4 class="card-title card-title-dash mb-0">Lista de grupos de servicio</h4>
+              <p class="card-subtitle card-subtitle-dash mb-0">Detalle de fecha y nombre de los grupos cargados.</p>
+            </div>
+            <button class="btn btn-primary text-white btn-sm" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#collapseFormularioGrupo"
+                    aria-expanded="false" aria-controls="collapseFormularioGrupo">
+              <i class="mdi mdi-plus"></i> Nuevo grupo
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Fecha inicio</th>
+                  <th>Nombre</th>
+                  <th>Establecimiento</th>
+                  <th>Rodeo</th>
+                  <th>Tipo</th>
+                  <th>Estado</th>
+                  <th>Animales</th>
+                  <th class="text-end">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for grupo in grupos %}
+                <tr style="cursor:pointer;" onclick="window.location='{% url 'grupo_servicio_detalle' grupo.id %}'">
+                  <td>{{ grupo.fecha_inicio|date:"d/m/Y" }}</td>
+                  <td>
+                    <strong>{{ grupo.nombre }}</strong>
+                    {% if grupo.manejo %}<br><small class="text-muted">{{ grupo.manejo }}</small>{% endif %}
+                  </td>
+                  <td>{{ grupo.establecimiento }}</td>
+                  <td>{{ grupo.rodeo|default:"—" }}</td>
+                  <td>
+                    <span class="badge badge-opacity-primary">{{ grupo.get_tipo_servicio_display }}</span>
+                  </td>
+                  <td>
+                    {% if grupo.estado == 'EN_CURSO' %}
+                      <span class="badge badge-opacity-success">{{ grupo.get_estado_display }}</span>
+                    {% elif grupo.estado == 'PLANIFICADO' %}
+                      <span class="badge badge-opacity-warning">{{ grupo.get_estado_display }}</span>
+                    {% elif grupo.estado == 'CERRADO' %}
+                      <span class="badge badge-opacity-secondary">{{ grupo.get_estado_display }}</span>
+                    {% else %}
+                      <span class="badge badge-opacity-danger">{{ grupo.get_estado_display }}</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ grupo.total_activos }}</td>
+                  <td class="text-end" onclick="event.stopPropagation()">
+                    <a href="{% url 'grupo_servicio_detalle' grupo.id %}" class="btn btn-sm btn-primary text-white me-1">
+                      <i class="mdi mdi-eye-outline"></i> Ver
+                    </a>
+                    <a href="{% url 'grupo_servicio_editar' grupo.id %}" class="btn btn-sm btn-otline-dark">
+                      <i class="mdi mdi-pencil-outline"></i> Editar
+                    </a>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="8" class="text-center text-muted py-4">
+                    No hay grupos de servicio cargados.
+                    <a href="#collapseFormularioGrupo" data-bs-toggle="collapse">Creá el primero</a>.
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
   {# ================= ACORDEON FORMULARIO ================= #}
   <div class="accordion mt-3" id="accordionGrupoServicio">
     <div class="accordion-item">
       <h2 class="accordion-header" id="headingFormularioGrupo">
-        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFormularioGrupo" aria-expanded="true" aria-controls="collapseFormularioGrupo">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFormularioGrupo" aria-expanded="false" aria-controls="collapseFormularioGrupo">
           {% if modificacion %}Editar grupo{% else %}Crear nuevo grupo{% endif %}
         </button>
       </h2>
 
-      <div id="collapseFormularioGrupo" class="accordion-collapse collapse show" aria-labelledby="headingFormularioGrupo" data-bs-parent="#accordionGrupoServicio">
+      <div id="collapseFormularioGrupo" class="accordion-collapse collapse {% if modificacion or form.errors %}show{% endif %}" aria-labelledby="headingFormularioGrupo" data-bs-parent="#accordionGrupoServicio">
         <div class="accordion-body">
 
           <form method="post" novalidate id="form-grupo-servicio">
@@ -185,82 +267,6 @@
             </div>
 
           </form>
-
-        </div>
-      </div>
-    </div>
-  </div>
-
-  {# ================= LISTA DE GRUPOS ================= #}
-  <div class="row mt-4">
-    <div class="col-sm-12">
-      <div class="card card-rounded">
-        <div class="card-body">
-          <h4 class="card-title card-title-dash">Lista de grupos de servicio</h4>
-          <p class="card-subtitle card-subtitle-dash mb-4">Detalle de fecha y nombre de los grupos cargados.</p>
-
-          <div class="table-responsive">
-            <table class="table table-hover">
-              <thead>
-                <tr>
-                  <th>Fecha inicio</th>
-                  <th>Nombre</th>
-                  <th>Establecimiento</th>
-                  <th>Rodeo</th>
-                  <th>Tipo</th>
-                  <th>Estado</th>
-                  <th>Animales</th>
-                  <th class="text-end">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for grupo in grupos %}
-                <tr style="cursor:pointer;" onclick="window.location='{% url 'grupo_servicio_detalle' grupo.id %}'">
-                  <td>{{ grupo.fecha_inicio|date:"d/m/Y" }}</td>
-                  <td>
-                    <strong>{{ grupo.nombre }}</strong>
-                    {% if grupo.manejo %}<br><small class="text-muted">{{ grupo.manejo }}</small>{% endif %}
-                  </td>
-                  <td>{{ grupo.establecimiento }}</td>
-                  <td>{{ grupo.rodeo|default:"—" }}</td>
-                  <td>
-                    <span class="badge badge-opacity-primary">
-                      {{ grupo.get_tipo_servicio_display }}
-                    </span>
-                  </td>
-                  <td>
-                    {% if grupo.estado == 'EN_CURSO' %}
-                      <span class="badge badge-opacity-success">{{ grupo.get_estado_display }}</span>
-                    {% elif grupo.estado == 'PLANIFICADO' %}
-                      <span class="badge badge-opacity-warning">{{ grupo.get_estado_display }}</span>
-                    {% elif grupo.estado == 'CERRADO' %}
-                      <span class="badge badge-opacity-secondary">{{ grupo.get_estado_display }}</span>
-                    {% else %}
-                      <span class="badge badge-opacity-danger">{{ grupo.get_estado_display }}</span>
-                    {% endif %}
-                  </td>
-                  <td>{{ grupo.total_activos }}</td>
-                  <td class="text-end" onclick="event.stopPropagation()">
-                    <a href="{% url 'grupo_servicio_detalle' grupo.id %}"
-                       class="btn btn-sm btn-primary text-white me-1">
-                      <i class="mdi mdi-eye-outline"></i> Ver
-                    </a>
-                    <a href="{% url 'grupo_servicio_editar' grupo.id %}"
-                       class="btn btn-sm btn-otline-dark">
-                      <i class="mdi mdi-pencil-outline"></i> Editar
-                    </a>
-                  </td>
-                </tr>
-                {% empty %}
-                <tr>
-                  <td colspan="8" class="text-center text-muted py-4">
-                    No hay grupos de servicio cargados. Creá el primero arriba.
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
 
         </div>
       </div>

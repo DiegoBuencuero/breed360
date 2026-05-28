@@ -8,7 +8,8 @@ from .models import (
     AnimalBovino, MovimientoRodeo, EventoReproductivo, Rodeo, RazaBovino,
     SubRaza, Establecimiento, RegistroSanitario, PadreGenetico, GrupoServicio,
     EventoGrupoServicio, TipoEvento, Insumo, ViaAdministracion,
-    DiagnosticoPreñezRodeo, MetodoDiagnostico,
+    DiagnosticoPreñezRodeo, MetodoDiagnostico, SesionSanitaria, TipoSanitario,
+    ConfigFiltroReproductivo,
 )
 
 class BaseForm(ModelForm):
@@ -334,6 +335,72 @@ class DiagnosticoPreñezRodeoForm(forms.ModelForm):
         }
 
 
+# =========================================================
+# SESIÓN SANITARIA
+# =========================================================
+
+class SesionSanitariaForm(forms.ModelForm):
+    rodeos = forms.ModelMultipleChoiceField(
+        queryset=Rodeo.objects.none(),
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
+        label=_("Rodeos a incluir"),
+        help_text=_("Seleccioná uno o más rodeos para cargar sus animales."),
+    )
+
+    class Meta:
+        model  = SesionSanitaria
+        fields = [
+            "establecimiento",
+            "fecha",
+            "tipo_sanitario",
+            "nombre_evento",
+            "insumo",
+            "dosis",
+            "lote",
+            "via_admin",
+            "requiere_refuerzo",
+            "dias_hasta_refuerzo",
+            "observaciones",
+        ]
+        widgets = {
+            "establecimiento":      forms.Select(attrs={"class": "form-select", "id": "id_establecimiento"}),
+            "fecha":                forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+            "tipo_sanitario":       forms.Select(attrs={"class": "form-select"}),
+            "nombre_evento":        forms.TextInput(attrs={"class": "form-control", "placeholder": "Ej: Vacunación Aftosa mayo 2026"}),
+            "insumo":               forms.Select(attrs={"class": "form-select"}),
+            "dosis":                forms.TextInput(attrs={"class": "form-control", "placeholder": "Ej: 2 ml"}),
+            "lote":                 forms.TextInput(attrs={"class": "form-control"}),
+            "via_admin":            forms.Select(attrs={"class": "form-select"}),
+            "requiere_refuerzo":    forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "dias_hasta_refuerzo":  forms.NumberInput(attrs={"class": "form-control", "min": 1}),
+            "observaciones":        forms.Textarea(attrs={"class": "form-control", "rows": 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        empresa = kwargs.pop("empresa", None)
+        super().__init__(*args, **kwargs)
+        self.fields["insumo"].queryset  = Insumo.objects.filter(activo=True).order_by("tipo", "nombre")
+        self.fields["insumo"].required  = False
+        self.fields["via_admin"].required = False
+        self.fields["dias_hasta_refuerzo"].required = False
+        if empresa:
+            self.fields["establecimiento"].queryset = Establecimiento.objects.filter(empresa=empresa, activo=True)
+            self.fields["rodeos"].queryset = (
+                Rodeo.objects.filter(establecimiento__empresa=empresa, activo=True)
+                .select_related("establecimiento").order_by("nombre")
+            )
+        else:
+            self.fields["establecimiento"].queryset = Establecimiento.objects.filter(activo=True)
+            self.fields["rodeos"].queryset = Rodeo.objects.filter(activo=True).select_related("establecimiento")
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("requiere_refuerzo") and not cleaned.get("dias_hasta_refuerzo"):
+            self.add_error("dias_hasta_refuerzo", _("Indicá los días hasta el refuerzo."))
+        return cleaned
+
+
 class RegistroSanitarioForm(forms.ModelForm):
     class Meta:
         model = RegistroSanitario
@@ -369,3 +436,84 @@ class RegistroSanitarioForm(forms.ModelForm):
             self.add_error("dias_hasta_refuerzo", "Debes indicar los días hasta el refuerzo.")
 
         return cleaned_data
+
+class GrupoServicioCreacionForm(BaseForm):
+    """Form simplificado para el flujo de creación con selección visual de animales.
+    Sin padre_genetico ni rodeo (se asignan después). Sin filtros (vienen de config)."""
+    class Meta:
+        model  = GrupoServicio
+        fields = [
+            "establecimiento",
+            "nombre",
+            "tipo_servicio",
+            "fecha_inicio",
+            "fecha_fin_prevista",
+            "observaciones",
+        ]
+        widgets = {
+            "establecimiento"    : forms.Select(),
+            "nombre"             : forms.TextInput(attrs={"placeholder": _("Ej: Inseminación Otoño 2026")}),
+            "tipo_servicio"      : forms.Select(),
+            "fecha_inicio"       : forms.DateInput(attrs={"type": "date"}),
+            "fecha_fin_prevista" : forms.DateInput(attrs={"type": "date"}),
+            "observaciones"      : forms.Textarea(attrs={"rows": 2}),
+        }
+        labels = {
+            "establecimiento"    : _("Establecimiento"),
+            "nombre"             : _("Nombre del grupo"),
+            "tipo_servicio"      : _("Tipo de servicio"),
+            "fecha_inicio"       : _("Fecha inicio"),
+            "fecha_fin_prevista" : _("Fecha fin prevista"),
+            "observaciones"      : _("Observaciones"),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["establecimiento"].queryset = (
+            Establecimiento.objects.filter(activo=True).order_by("nombre")
+        )
+        self.fields["fecha_fin_prevista"].required = False
+        self.fields["observaciones"].required = False
+
+    def clean(self):
+        cleaned = super().clean()
+        fecha_inicio       = cleaned.get("fecha_inicio")
+        fecha_fin_prevista = cleaned.get("fecha_fin_prevista")
+        if fecha_inicio and fecha_fin_prevista and fecha_fin_prevista < fecha_inicio:
+            self.add_error("fecha_fin_prevista", _("La fecha de fin no puede ser anterior a la de inicio."))
+        return cleaned
+
+
+class ConfigFiltroReproductivoForm(BaseForm):
+    class Meta:
+        model  = ConfigFiltroReproductivo
+        fields = [
+            "establecimiento",
+            "dias_minimos_posparto",
+            "excluir_prenadas",
+            "edad_minima_dias",
+            "peso_minimo_kg",
+        ]
+        widgets = {
+            "establecimiento"       : forms.Select(),
+            "dias_minimos_posparto" : forms.NumberInput(attrs={"min": 0}),
+            "excluir_prenadas"      : forms.CheckboxInput(),
+            "edad_minima_dias"      : forms.NumberInput(attrs={"min": 0}),
+            "peso_minimo_kg"        : forms.NumberInput(attrs={"min": 0, "step": "0.1"}),
+        }
+        labels = {
+            "establecimiento"       : _("Establecimiento"),
+            "dias_minimos_posparto" : _("Días mínimos posparto"),
+            "excluir_prenadas"      : _("Excluir preñadas"),
+            "edad_minima_dias"      : _("Edad mínima (días)"),
+            "peso_minimo_kg"        : _("Peso mínimo (kg)"),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["establecimiento"].queryset = (
+            Establecimiento.objects.filter(activo=True).order_by("nombre")
+        )
+        self.fields["excluir_prenadas"].widget.attrs["class"] = "form-check-input"
+        self.fields["edad_minima_dias"].required = False
+        self.fields["peso_minimo_kg"].required = False

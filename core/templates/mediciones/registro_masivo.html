@@ -1,0 +1,461 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block plugin_css %}
+<style>
+  /* ── Cabecera sticky ── */
+  .med-header {
+    position: sticky; top: 0; z-index: 100;
+    background: #fff; border-bottom: 2px solid #e5e7eb;
+    padding: .85rem 0; margin-bottom: 1.25rem;
+  }
+
+  /* ── Chips (igual que sanidad) ── */
+  .rodeo-card { border-radius: 12px; border: 1px solid #e8edf2; }
+  .rodeo-card .card-header { background: #f8fafc; border-radius: 12px 12px 0 0; border-bottom: 1px solid #e8edf2; }
+
+  .vaca-chip {
+    display: inline-flex; flex-direction: column; align-items: center;
+    width: 72px; padding: 8px 4px 6px;
+    border-radius: 10px; border: 2px solid #5cb85c;
+    cursor: pointer; transition: all .15s; position: relative;
+    font-size: 11px; line-height: 1.2; text-align: center;
+    background: #eaf4eb; color: #2d6a2d;
+  }
+  .vaca-chip.desel {
+    background: #f5f5f5; border-color: #ccc; color: #aaa;
+    text-decoration: line-through;
+  }
+  .vaca-chip .vaca-ico { font-size: 22px; margin-bottom: 2px; }
+  .vaca-chip .vaca-num { font-weight: 600; word-break: break-all; }
+  .vaca-chip .vaca-x {
+    position: absolute; top: 3px; right: 4px;
+    font-size: 13px; line-height: 1; color: #999; display: none;
+  }
+  .vaca-chip.desel .vaca-x { display: block; color: #ccc; }
+  .grilla-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  /* ── Tabla de mediciones ── */
+  .tabla-med { border-collapse: separate; border-spacing: 0; width: 100%; }
+  .tabla-med thead th {
+    background: #f8fafc; font-size: .76rem; font-weight: 700;
+    color: #6b7280; text-transform: uppercase; letter-spacing: .4px;
+    padding: .6rem .75rem; border-bottom: 2px solid #e5e7eb; white-space: nowrap;
+  }
+  .tabla-med tbody tr { border-bottom: 1px solid #f3f4f6; }
+  .tabla-med tbody tr:hover { background: #fafafa; }
+  .tabla-med td { padding: .45rem .75rem; vertical-align: middle; }
+  .tabla-med .rodeo-sep td {
+    background: #f1f5f9; font-size: .75rem; font-weight: 700;
+    color: #64748b; text-transform: uppercase; letter-spacing: .4px;
+    padding: .35rem .75rem; border-bottom: 1px solid #e2e8f0;
+  }
+
+  .animal-id { font-weight: 700; font-size: .9rem; color: #111827; }
+  .animal-cat { font-size: .76rem; color: #9ca3af; }
+  .ultimo-peso-val { font-size: .82rem; color: #374151; }
+
+  .med-input {
+    width: 88px; height: 40px; border-radius: 8px;
+    border: 1px solid #e5e7eb; text-align: right;
+    font-size: .92rem; font-weight: 600; padding: 0 .55rem;
+    background: #fff; transition: border-color .15s, box-shadow .15s;
+    -moz-appearance: textfield;
+  }
+  .med-input::-webkit-outer-spin-button,
+  .med-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .med-input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.1); outline: none; }
+  .med-input.filled { border-color: #22c55e; background: #f0fdf4; }
+  .med-input.peso { width: 96px; border-color: #93c5fd; background: #eff6ff; }
+  .med-input.peso:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.1); }
+  .med-input.peso.filled { border-color: #16a34a; background: #f0fdf4; }
+
+  .empty-state { text-align: center; padding: 3rem 1rem; color: #9ca3af; }
+  .empty-state i { font-size: 3rem; display: block; margin-bottom: .75rem; opacity: .3; }
+
+  .btn-guardar-med { height: 42px; font-size: .9rem; font-weight: 600; padding: 0 1.5rem; border-radius: 9px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+
+  {% if messages %}
+  <div class="mb-3">
+    {% for message in messages %}
+    <div class="alert {{ message.tags }} alert-dismissible fade show d-flex align-items-center">
+      <i class="mdi {% if 'success' in message.tags %}mdi-check-circle{% elif 'warning' in message.tags %}mdi-alert{% else %}mdi-information{% endif %} me-2"></i>
+      <div>{{ message }}</div>
+      <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <form method="post" id="form-mediciones">
+    {% csrf_token %}
+
+    {# ── Cabecera sticky ── #}
+    <div class="med-header">
+      <div class="d-flex flex-wrap align-items-end gap-3">
+
+        <div>
+          <label class="form-label fw-semibold small mb-1">Establecimiento</label>
+          <select class="form-select" id="sel-estab" style="min-width:170px;">
+            <option value="">— Elegir —</option>
+            {% for e in establecimientos_opt %}
+            <option value="{{ e.id }}">{{ e.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label class="form-label fw-semibold small mb-1">Fecha <span class="text-danger">*</span></label>
+          <input type="date" name="fecha" class="form-control" id="inp-fecha"
+                 required style="width:155px;">
+        </div>
+
+        <div>
+          <label class="form-label fw-semibold small mb-1">Tipo de medición <span class="text-danger">*</span></label>
+          <select class="form-select" name="tipo_medicion" required style="min-width:155px;">
+            <option value="">— Elegir —</option>
+            {% for t in tipos_opt %}
+            <option value="{{ t.id }}">{{ t.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="ms-auto d-flex align-items-center gap-3">
+          <span class="text-muted small" id="header-counter" style="display:none;">
+            Completados: <strong id="cnt-completados" class="text-success">0</strong>
+            / <span id="cnt-total">0</span>
+          </span>
+          <button type="submit" class="btn btn-primary text-white btn-guardar-med"
+                  id="btn-guardar" disabled>
+            <i class="mdi mdi-content-save-outline me-1"></i> Guardar mediciones
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    {# ── Estado vacío / cargando ── #}
+    <div id="empty-state" class="empty-state">
+      <i class="mdi mdi-scale"></i>
+      Elegí un establecimiento para comenzar.
+    </div>
+    <div id="loading-state" class="empty-state" style="display:none;">
+      <i class="mdi mdi-loading mdi-spin"></i> Cargando animales…
+    </div>
+
+    {# ── PASO 1: Selección de animales (chips) ── #}
+    <div id="chip-section" style="display:none;">
+
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+          <h5 class="mb-0">Animales a medir</h5>
+          <p class="text-muted small mb-0">Todos están seleccionados. Tocá los que <strong>no</strong> van a ser medidos para quitarlos.</p>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+          <span class="text-muted small">
+            Seleccionados: <strong id="count-chips-sel">0</strong> / <strong id="count-chips-total">0</strong>
+          </span>
+          <button type="button" class="btn btn-sm btn-otline-dark" id="btn-todos">Todos</button>
+          <button type="button" class="btn btn-sm btn-otline-dark" id="btn-ninguno">Ninguno</button>
+        </div>
+      </div>
+
+      <div id="contenedor-chips" class="row g-3 mb-4"></div>
+
+      <div class="d-flex justify-content-end">
+        <button type="button" class="btn btn-primary text-white" id="btn-armar-tabla">
+          <i class="mdi mdi-table-arrow-right me-1"></i> Armar tabla de mediciones
+        </button>
+      </div>
+
+    </div>
+
+    {# ── PASO 2: Tabla de mediciones ── #}
+    <div id="tabla-section" style="display:none;">
+
+      <div class="mb-3">
+        <button type="button" class="btn btn-sm btn-otline-dark" id="btn-volver-chips">
+          <i class="mdi mdi-arrow-left me-1"></i> Cambiar selección
+        </button>
+      </div>
+
+      <div class="card card-rounded">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="tabla-med">
+              <thead>
+                <tr>
+                  <th>Animal</th>
+                  <th>Categoría</th>
+                  <th>Último peso</th>
+                  <th style="color:#3b82f6;">Peso (kg)</th>
+                  <th>CE (cm)</th>
+                  <th>GIM</th>
+                  <th>AOB</th>
+                  <th>GD</th>
+                  <th>GC</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-animales"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </form>
+
+</div>
+{% endblock %}
+
+
+{% block custom_js %}
+<script>
+const URL_ANIMALES = "{% url 'ajax_animales_para_medicion' %}";
+
+const $selEstab      = $("#sel-estab");
+const $empty         = $("#empty-state");
+const $loading       = $("#loading-state");
+const $chipSection   = $("#chip-section");
+const $tablaSection  = $("#tabla-section");
+const $contenedorChips = $("#contenedor-chips");
+const $tbody         = $("#tbody-animales");
+const $btnGuardar    = $("#btn-guardar");
+const $cntComp       = $("#cnt-completados");
+const $cntTotal      = $("#cnt-total");
+const $headerCounter = $("#header-counter");
+
+let todosAnimales = [];
+
+// ── Fecha de hoy por defecto ──────────────────────────────────
+$("#inp-fecha").val(new Date().toISOString().split("T")[0]);
+
+// ── Cargar animales al cambiar establecimiento ────────────────
+$selEstab.on("change", function() {
+  const estabId = $(this).val();
+  resetAll();
+  if (!estabId) { $empty.show(); return; }
+
+  $empty.hide(); $loading.show();
+
+  $.getJSON(URL_ANIMALES, { establecimiento: estabId }, function(data) {
+    $loading.hide();
+    if (!data.animales || !data.animales.length) {
+      $empty.text("Sin animales activos en este establecimiento.").show();
+      return;
+    }
+    todosAnimales = data.animales;
+    renderChips(todosAnimales);
+    $chipSection.show();
+    actualizarCountChips();
+  }).fail(function() {
+    $loading.hide();
+    $empty.text("Error al cargar animales. Intentá de nuevo.").show();
+  });
+});
+
+function resetAll() {
+  todosAnimales = [];
+  $chipSection.hide();
+  $tablaSection.hide();
+  $contenedorChips.empty();
+  $tbody.empty();
+  $btnGuardar.prop("disabled", true);
+  $headerCounter.hide();
+}
+
+// ── Renderizar chips agrupados por rodeo ──────────────────────
+function renderChips(animales) {
+  $contenedorChips.empty();
+
+  const grupos = {};
+  animales.forEach(a => {
+    const r = a.rodeo || "Sin rodeo";
+    if (!grupos[r]) grupos[r] = [];
+    grupos[r].push(a);
+  });
+
+  Object.keys(grupos).forEach(rodeo => {
+    const lista = grupos[rodeo];
+    const chips = lista.map(a =>
+      `<div class="vaca-chip sel" data-animal-id="${a.id}" title="${a.caravana}">
+        <span class="vaca-x"><i class="mdi mdi-close"></i></span>
+        <i class="mdi mdi-cow vaca-ico"></i>
+        <div class="vaca-num">${a.caravana}</div>
+      </div>`
+    ).join("");
+
+    const safeId = rodeo.replace(/\s/g, "_").replace(/[^a-zA-Z0-9_]/g, "");
+    $contenedorChips.append(`
+      <div class="col-12 col-md-6 col-xl-4">
+        <div class="card rodeo-card h-100">
+          <div class="card-header d-flex align-items-center justify-content-between py-2 px-3">
+            <div class="d-flex align-items-center gap-2">
+              <input type="checkbox" class="form-check-input chk-rodeo mt-0" checked
+                     data-rodeo="${rodeo}" id="chk_r_${safeId}">
+              <label class="fw-semibold mb-0 small" for="chk_r_${safeId}">${rodeo}</label>
+            </div>
+            <span class="badge bg-secondary rodeo-badge">${lista.length}</span>
+          </div>
+          <div class="card-body p-3">
+            <div class="grilla-chips">${chips}</div>
+          </div>
+        </div>
+      </div>
+    `);
+  });
+}
+
+// ── Click en chip ─────────────────────────────────────────────
+$contenedorChips.on("click", ".vaca-chip", function() {
+  $(this).toggleClass("sel desel");
+  actualizarRodeoBadge($(this).closest(".card"));
+  actualizarCountChips();
+});
+
+// ── Checkbox de rodeo completo ────────────────────────────────
+$contenedorChips.on("change", ".chk-rodeo", function() {
+  const card = $(this).closest(".card");
+  if (this.checked) card.find(".vaca-chip").removeClass("desel").addClass("sel");
+  else              card.find(".vaca-chip").removeClass("sel").addClass("desel");
+  actualizarRodeoBadge(card);
+  actualizarCountChips();
+});
+
+function actualizarRodeoBadge(card) {
+  const sel   = card.find(".vaca-chip.sel").length;
+  const total = card.find(".vaca-chip").length;
+  card.find(".rodeo-badge").text(`${sel}/${total}`);
+  card.find(".chk-rodeo")
+    .prop("checked", sel > 0)
+    .prop("indeterminate", sel > 0 && sel < total);
+}
+
+function actualizarCountChips() {
+  const sel   = $contenedorChips.find(".vaca-chip.sel").length;
+  const total = $contenedorChips.find(".vaca-chip").length;
+  $("#count-chips-sel").text(sel);
+  $("#count-chips-total").text(total);
+}
+
+// ── Todos / Ninguno ───────────────────────────────────────────
+$("#btn-todos").on("click", function() {
+  $contenedorChips.find(".vaca-chip").removeClass("desel").addClass("sel");
+  $contenedorChips.find(".chk-rodeo").prop("checked", true).prop("indeterminate", false);
+  $contenedorChips.find(".card").each(function() { actualizarRodeoBadge($(this)); });
+  actualizarCountChips();
+});
+$("#btn-ninguno").on("click", function() {
+  $contenedorChips.find(".vaca-chip").removeClass("sel").addClass("desel");
+  $contenedorChips.find(".chk-rodeo").prop("checked", false).prop("indeterminate", false);
+  $contenedorChips.find(".card").each(function() { actualizarRodeoBadge($(this)); });
+  actualizarCountChips();
+});
+
+// ── Armar tabla con los seleccionados ────────────────────────
+$("#btn-armar-tabla").on("click", function() {
+  const selectedIds = new Set(
+    $contenedorChips.find(".vaca-chip.sel")
+      .map(function() { return parseInt($(this).data("animal-id")); })
+      .get()
+  );
+  if (!selectedIds.size) { alert("Seleccioná al menos un animal."); return; }
+
+  const selAnimales = todosAnimales.filter(a => selectedIds.has(a.id));
+  renderTabla(selAnimales);
+  $chipSection.hide();
+  $tablaSection.show();
+  $headerCounter.show();
+  $btnGuardar.prop("disabled", false);
+  actualizarContadorMed();
+});
+
+// ── Volver a la selección de chips ───────────────────────────
+$("#btn-volver-chips").on("click", function() {
+  $tablaSection.hide();
+  $tbody.empty();
+  $btnGuardar.prop("disabled", true);
+  $headerCounter.hide();
+  $cntComp.text("0"); $cntTotal.text("0");
+  $chipSection.show();
+});
+
+// ── Renderizar tabla de mediciones ───────────────────────────
+function renderTabla(animales) {
+  $tbody.empty();
+
+  const grupos = {};
+  animales.forEach(a => {
+    const r = a.rodeo || "Sin rodeo";
+    if (!grupos[r]) grupos[r] = [];
+    grupos[r].push(a);
+  });
+
+  Object.keys(grupos).forEach(rodeo => {
+    $tbody.append(`
+      <tr class="rodeo-sep">
+        <td colspan="9"><i class="mdi mdi-cow me-1"></i>${rodeo} — ${grupos[rodeo].length} animales</td>
+      </tr>
+    `);
+    grupos[rodeo].forEach(a => {
+      const ultimoPeso = a.ultimo_peso
+        ? `<span class="ultimo-peso-val">${a.ultimo_peso} kg</span>`
+        : '<span class="text-muted">—</span>';
+      $tbody.append(`
+        <tr>
+          <td>
+            <input type="hidden" name="animal_ids" value="${a.id}">
+            <span class="animal-id">${a.caravana}</span>
+          </td>
+          <td><span class="animal-cat">${a.categoria}</span></td>
+          <td>${ultimoPeso}</td>
+          <td><input type="number" step="0.1" min="0" max="2000" name="peso_${a.id}" class="med-input peso" placeholder="kg"></td>
+          <td><input type="number" step="0.1" min="0"             name="ce_${a.id}"  class="med-input" placeholder="—"></td>
+          <td><input type="number" step="0.01" min="0"            name="gim_${a.id}" class="med-input" placeholder="—"></td>
+          <td><input type="number" step="0.01" min="0"            name="aob_${a.id}" class="med-input" placeholder="—"></td>
+          <td><input type="number" step="0.01" min="0"            name="gd_${a.id}"  class="med-input" placeholder="—"></td>
+          <td><input type="number" step="0.01" min="0"            name="gc_${a.id}"  class="med-input" placeholder="—"></td>
+        </tr>
+      `);
+    });
+  });
+
+  $cntTotal.text(animales.length);
+}
+
+// ── Resaltar inputs con datos ─────────────────────────────────
+$tbody.on("input", ".med-input", function() {
+  $(this).toggleClass("filled", $(this).val() !== "");
+  actualizarContadorMed();
+});
+
+// ── Enter/flechas navegan por la columna Peso ─────────────────
+$tbody.on("keydown", ".med-input.peso", function(e) {
+  if (e.key === "Enter" || e.key === "ArrowDown") {
+    e.preventDefault();
+    const rows = $tbody.find("tr:not(.rodeo-sep)");
+    const idx  = rows.index($(this).closest("tr"));
+    if (idx < rows.length - 1) rows.eq(idx + 1).find(".med-input.peso").focus().select();
+  }
+  if (e.key === "ArrowUp") {
+    e.preventDefault();
+    const rows = $tbody.find("tr:not(.rodeo-sep)");
+    const idx  = rows.index($(this).closest("tr"));
+    if (idx > 0) rows.eq(idx - 1).find(".med-input.peso").focus().select();
+  }
+});
+
+function actualizarContadorMed() {
+  const completados = $tbody.find("tr:not(.rodeo-sep) .med-input.peso").filter(function() {
+    return $(this).val() !== "";
+  }).length;
+  $cntComp.text(completados);
+}
+</script>
+{% endblock %}

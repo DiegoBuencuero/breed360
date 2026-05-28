@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block content %}
+<div class="content-wrapper">
+
+  <div class="d-sm-flex align-items-center justify-content-between border-bottom pb-3 mb-4">
+    <div>
+      <h4 class="mb-1">Parámetros del sistema</h4>
+      <p class="text-muted mb-0 small">Configurá los filtros de selección reproductiva por establecimiento.</p>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="row g-4">
+    {% for fila in filas %}
+    <div class="col-lg-6">
+      <div class="card card-rounded">
+        <div class="card-body">
+          <h5 class="card-title card-title-dash mb-1">{{ fila.estab.nombre }}</h5>
+          <p class="text-muted small mb-3">Filtros para armado de grupos reproductivos</p>
+
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="establecimiento_id" value="{{ fila.estab.pk }}">
+
+            <div class="row g-3">
+              <div class="col-6">
+                <label class="form-label fw-semibold small">Días mín. posparto</label>
+                <input type="number" name="dias_minimos_posparto" min="0"
+                       class="form-control" value="{{ fila.dias_minimos_posparto }}">
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-semibold small">Edad mín. (días)</label>
+                <input type="number" name="edad_minima_dias" min="0"
+                       class="form-control" value="{{ fila.edad_minima_dias }}">
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-semibold small">Peso mín. (kg)</label>
+                <input type="number" name="peso_minimo_kg" min="0" step="0.1"
+                       class="form-control" value="{{ fila.peso_minimo_kg }}">
+              </div>
+              <div class="col-6 d-flex align-items-end pb-1">
+                <div class="form-check">
+                  <input type="checkbox" name="excluir_prenadas" class="form-check-input"
+                         id="excluir_{{ fila.estab.pk }}"
+                         {% if fila.excluir_prenadas %}checked{% endif %}>
+                  <label class="form-check-label small" for="excluir_{{ fila.estab.pk }}">
+                    Excluir preñadas
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-end mt-3">
+              <button type="submit" class="btn btn-primary text-white btn-sm">
+                <i class="mdi mdi-check"></i> Guardar
+              </button>
+            </div>
+          </form>
+
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+      <p class="text-muted text-center py-5">No hay establecimientos activos configurados.</p>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block content %}
+<div class="content-wrapper">
+
+  <div class="d-sm-flex align-items-center justify-content-between border-bottom pb-3 mb-4">
+    <div>
+      <h4 class="mb-1">{{ sesion.nombre_evento }}</h4>
+      <p class="text-muted mb-0 small">
+        {{ sesion.get_tipo_sanitario_display }} · {{ sesion.fecha|date:"d/m/Y" }} · {{ sesion.establecimiento }}
+      </p>
+    </div>
+    <a href="{% url 'vista_lista_sesiones_sanitarias' %}" class="btn btn-otline-dark btn-sm">
+      <i class="mdi mdi-arrow-left"></i> Volver
+    </a>
+  </div>
+
+  <div class="row g-4">
+
+    {# ── Datos del evento ── #}
+    <div class="col-lg-4">
+      <div class="card card-rounded h-100">
+        <div class="card-body">
+          <h5 class="card-title card-title-dash mb-4">Datos del evento</h5>
+
+          <dl class="row mb-0">
+            <dt class="col-5 text-muted fw-normal small">Tipo</dt>
+            <dd class="col-7">
+              <span class="badge badge-opacity-warning">{{ sesion.get_tipo_sanitario_display }}</span>
+            </dd>
+
+            <dt class="col-5 text-muted fw-normal small">Fecha</dt>
+            <dd class="col-7">{{ sesion.fecha|date:"d/m/Y" }}</dd>
+
+            <dt class="col-5 text-muted fw-normal small">Establecimiento</dt>
+            <dd class="col-7">{{ sesion.establecimiento }}</dd>
+
+            {% if sesion.insumo %}
+            <dt class="col-5 text-muted fw-normal small">Insumo</dt>
+            <dd class="col-7">{{ sesion.insumo }}</dd>
+            {% endif %}
+
+            {% if sesion.dosis %}
+            <dt class="col-5 text-muted fw-normal small">Dosis</dt>
+            <dd class="col-7">{{ sesion.dosis }}</dd>
+            {% endif %}
+
+            {% if sesion.lote %}
+            <dt class="col-5 text-muted fw-normal small">Lote</dt>
+            <dd class="col-7">{{ sesion.lote }}</dd>
+            {% endif %}
+
+            {% if sesion.via_admin %}
+            <dt class="col-5 text-muted fw-normal small">Vía</dt>
+            <dd class="col-7">{{ sesion.get_via_admin_display }}</dd>
+            {% endif %}
+
+            <dt class="col-5 text-muted fw-normal small">Refuerzo</dt>
+            <dd class="col-7">
+              {% if sesion.requiere_refuerzo %}
+                <span class="text-warning">
+                  <i class="mdi mdi-clock-outline"></i> {{ sesion.dias_hasta_refuerzo }} días
+                </span>
+              {% else %}
+                No
+              {% endif %}
+            </dd>
+
+            <dt class="col-5 text-muted fw-normal small">Animales</dt>
+            <dd class="col-7"><strong>{{ sesion.total_animales }}</strong></dd>
+
+            {% if sesion.observaciones %}
+            <dt class="col-5 text-muted fw-normal small">Observaciones</dt>
+            <dd class="col-7">{{ sesion.observaciones }}</dd>
+            {% endif %}
+          </dl>
+
+        </div>
+      </div>
+    </div>
+
+    {# ── Lista de animales ── #}
+    <div class="col-lg-8">
+      <div class="card card-rounded">
+        <div class="card-body">
+          <h5 class="card-title card-title-dash mb-4">
+            Animales tratados
+            <span class="badge bg-secondary ms-2">{{ sesion.total_animales }}</span>
+          </h5>
+
+          <div class="table-responsive">
+            <table class="table select-table">
+              <thead>
+                <tr>
+                  <th>Caravana</th>
+                  <th>Categoría</th>
+                  <th>Rodeo</th>
+                  {% if sesion.requiere_refuerzo %}
+                  <th>Refuerzo programado</th>
+                  {% endif %}
+                  <th>Observaciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for reg in registros %}
+                <tr>
+                  <td>
+                    <a href="{% url 'vista_detalle_bovino' reg.animal.id %}" class="text-decoration-none fw-semibold">
+                      {{ reg.animal.caravana_senasa }}
+                    </a>
+                  </td>
+                  <td>{{ reg.animal.categoria_actual|default:"—" }}</td>
+                  <td>{{ reg.animal.rodeo|default:"—" }}</td>
+                  {% if sesion.requiere_refuerzo %}
+                  <td>
+                    {% if reg.fecha_refuerzo %}
+                      {{ reg.fecha_refuerzo|date:"d/m/Y" }}
+                    {% else %}—{% endif %}
+                  </td>
+                  {% endif %}
+                  <td>{{ reg.observaciones|default:"—" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center text-muted py-4">Sin animales registrados.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

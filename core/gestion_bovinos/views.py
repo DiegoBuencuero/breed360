@@ -15,6 +15,7 @@ from .models import (
     EventoReproductivo,
     ResultadoTacto,
     RegistroSanitario,
+    SesionSanitaria,
     SugerenciaCambioCategoria,
     Rodeo,
     RazaBovino,
@@ -37,6 +38,10 @@ from .models import (
     TipoSanitario,
     TipoInsumo,
     CategoriaEvento,
+    MedicionAnimal,
+    TipoMedicion,
+    CategoriaBovino,
+    ConfigFiltroReproductivo,
 )
 
 from .forms import (
@@ -45,8 +50,11 @@ from .forms import (
     EventoReproductivoForm,
     EstablecimientoForm,
     GrupoServicioForm,
+    GrupoServicioCreacionForm,
+    ConfigFiltroReproductivoForm,
     EventoGrupoServicioForm,
     DiagnosticoPreñezRodeoForm,
+    SesionSanitariaForm,
 )
 
 
@@ -270,6 +278,222 @@ def vista_editar_grupo_servicio(request, id):
 # Edición
 # ---------------------------------------------------------
 @login_required
+# =========================================================
+# AJAX — Config filtro por establecimiento
+# =========================================================
+@login_required
+def ajax_config_filtro_establecimiento(request):
+    """
+    GET /ajax/config-filtro/?establecimiento=<id>
+    Devuelve los defaults de ConfigFiltroReproductivo para un establecimiento.
+    Si no existe el objeto, devuelve los defaults del modelo.
+    """
+    estab_id = request.GET.get("establecimiento")
+    if not estab_id:
+        return JsonResponse({"ok": False}, status=400)
+
+    try:
+        cfg = ConfigFiltroReproductivo.objects.get(establecimiento_id=estab_id)
+        data = {
+            "dias_minimos_posparto": cfg.dias_minimos_posparto,
+            "excluir_prenadas":      cfg.excluir_prenadas,
+            "edad_minima_dias":      cfg.edad_minima_dias,
+            "peso_minimo_kg":        float(cfg.peso_minimo_kg) if cfg.peso_minimo_kg else None,
+        }
+    except ConfigFiltroReproductivo.DoesNotExist:
+        data = {
+            "dias_minimos_posparto": 45,
+            "excluir_prenadas":      True,
+            "edad_minima_dias":      None,
+            "peso_minimo_kg":        None,
+        }
+
+    return JsonResponse(data)
+
+
+# =========================================================
+# AJAX — Animales disponibles para nuevo grupo (sin GrupoServicio guardado)
+# =========================================================
+@login_required
+def ajax_animales_para_nuevo_grupo(request):
+    """
+    GET /ajax/animales-nuevo-grupo/
+    Params: establecimiento, padre (opcional), dias_minimos_posparto,
+            excluir_prenadas, edad_minima_dias, peso_minimo_kg
+    Devuelve hembras agrupadas por rodeo con cumple_filtros, motivos y es_hija_directa.
+    """
+    estab_id = request.GET.get("establecimiento")
+    if not estab_id:
+        return JsonResponse({"rodeos": []})
+
+    # Filtros (con defaults)
+    try:
+        dias_posparto = int(request.GET.get("dias_minimos_posparto") or 45)
+    except (ValueError, TypeError):
+        dias_posparto = 45
+    excluir_prenadas = request.GET.get("excluir_prenadas", "true").lower() in ("true", "1", "on")
+    try:
+        edad_minima = int(request.GET.get("edad_minima_dias") or 0) or None
+    except (ValueError, TypeError):
+        edad_minima = None
+    try:
+        peso_minimo = float(request.GET.get("peso_minimo_kg") or 0) or None
+    except (ValueError, TypeError):
+        peso_minimo = None
+
+    padre_id = request.GET.get("padre") or None
+
+    # IDs de hijas directas del padre seleccionado
+    hijas_ids = set()
+    if padre_id:
+        hijas_ids = set(
+            AnimalBovino.objects
+            .filter(padre_genetico_id=padre_id, activo=True)
+            .values_list("id", flat=True)
+        )
+
+    qs = (
+        AnimalBovino.objects
+        .filter(
+            rodeo__establecimiento_id=estab_id,
+            activo=True,
+            sexo=SexoBovino.HEMBRA,
+        )
+        .select_related("rodeo", "categoria_actual", "estado_reproductivo", "padre_genetico")
+        .order_by("rodeo__nombre", "senasa_prefijo_animal", "senasa_numero_animal")
+    )
+
+    hoy = timezone.now().date()
+    rodeos = {}
+    for a in qs:
+        cumple, motivos = _evaluar_animal_con_filtros(
+            a, dias_posparto, excluir_prenadas, edad_minima, peso_minimo, hoy=hoy,
+        )
+        nombre_rodeo = a.rodeo.nombre if a.rodeo else "Sin rodeo"
+        rodeos.setdefault(nombre_rodeo, []).append({
+            "id":                  a.id,
+            "identificador":       a.caravana_senasa or a.tatuaje or f"#{a.id}",
+            "nombre_apodo":        a.nombre_apodo or "",
+            "categoria":           str(a.categoria_actual) if a.categoria_actual else "",
+            "estado_reproductivo": str(a.estado_reproductivo) if a.estado_reproductivo else "",
+            "edad_display":        a.edad_display or "",
+            "cumple_filtros":      cumple,
+            "motivos_no_cumple":   motivos,
+            "es_hija_directa":     a.id in hijas_ids,
+            "padre_nombre":        a.padre_genetico.nombre if a.padre_genetico else "",
+            "padre_codigo":        a.padre_genetico.codigo if a.padre_genetico else "",
+        })
+
+    resultado = [
+        {"rodeo": nombre, "animales": lista}
+        for nombre, lista in rodeos.items()
+    ]
+    return JsonResponse({"rodeos": resultado})
+
+
+# =========================================================
+# Vista — Crear grupo con selección de animales (estilo sanidad)
+# =========================================================
+@login_required
+def vista_crear_grupo_con_seleccion(request):
+    if request.method == "POST":
+        form = GrupoServicioCreacionForm(request.POST)
+        if form.is_valid():
+            grupo = form.save()
+            animal_ids_raw = request.POST.get("animal_ids", "")
+            if animal_ids_raw:
+                ids = [int(i) for i in animal_ids_raw.split(",") if i.strip().isdigit()]
+                animales = AnimalBovino.objects.filter(
+                    id__in=ids,
+                    rodeo__establecimiento=grupo.establecimiento,
+                    activo=True,
+                    sexo=SexoBovino.HEMBRA,
+                )
+                for animal in animales:
+                    try:
+                        grupo.agregar_animal(animal)
+                    except ValidationError:
+                        pass
+            messages.success(
+                request,
+                f"Grupo '{grupo.nombre}' creado con {grupo.total_activos} animales."
+            )
+            return redirect("grupo_servicio_detalle", id=grupo.id)
+    else:
+        form = GrupoServicioCreacionForm()
+
+    # Padres para el multi-selector visual de filtro de hijas (no se guardan en el grupo)
+    padres = list(
+        PadreGenetico.objects.filter(activo=True)
+        .values("id", "nombre", "codigo")
+        .order_by("nombre")
+    )
+
+    return render(request, "reproduccion/crear_grupo_repro.html", {
+        "form":   form,
+        "padres": padres,
+    })
+
+
+# =========================================================
+# Vista — Parámetros del sistema (filtros reproductivos por establecimiento)
+# =========================================================
+@login_required
+def vista_parametros_sistema(request):
+    empresa  = get_empresa(request)
+    establecimientos = Establecimiento.objects.filter(activo=True)
+    if empresa:
+        establecimientos = establecimientos.filter(empresa=empresa)
+    establecimientos = establecimientos.order_by("nombre")
+
+    # Construir lista de (establecimiento, config o None)
+    configs = {
+        cfg.establecimiento_id: cfg
+        for cfg in ConfigFiltroReproductivo.objects.filter(establecimiento__in=establecimientos)
+    }
+
+    if request.method == "POST":
+        estab_id = request.POST.get("establecimiento_id")
+        try:
+            estab = establecimientos.get(pk=estab_id)
+        except Establecimiento.DoesNotExist:
+            messages.error(request, "Establecimiento no válido.")
+            return redirect("vista_parametros_sistema")
+
+        cfg, _ = ConfigFiltroReproductivo.objects.get_or_create(establecimiento=estab)
+        try:
+            cfg.dias_minimos_posparto = int(request.POST.get("dias_minimos_posparto") or 45)
+        except ValueError:
+            cfg.dias_minimos_posparto = 45
+        cfg.excluir_prenadas = "excluir_prenadas" in request.POST
+        edad = request.POST.get("edad_minima_dias", "").strip()
+        cfg.edad_minima_dias = int(edad) if edad.isdigit() else None
+        peso = request.POST.get("peso_minimo_kg", "").strip()
+        try:
+            cfg.peso_minimo_kg = float(peso) if peso else None
+        except ValueError:
+            cfg.peso_minimo_kg = None
+        cfg.save()
+        messages.success(request, f"Parámetros guardados para {estab.nombre}.")
+        return redirect("vista_parametros_sistema")
+
+    # Lista de (estab, config_o_defaults) para el template
+    filas = []
+    for estab in establecimientos:
+        cfg = configs.get(estab.pk)
+        filas.append({
+            "estab": estab,
+            "dias_minimos_posparto": cfg.dias_minimos_posparto if cfg else 45,
+            "edad_minima_dias":      cfg.edad_minima_dias      if cfg else "",
+            "peso_minimo_kg":        cfg.peso_minimo_kg        if cfg else "",
+            "excluir_prenadas":      cfg.excluir_prenadas      if cfg else True,
+        })
+
+    return render(request, "configuracion/parametros_sistema.html", {
+        "filas": filas,
+    })
+
+
 def vista_crear_grupo_servicio(request):
     empresa = request.user.profile.empresa
 
@@ -389,6 +613,55 @@ def ajax_rodeos_por_establecimiento(request):
 # =========================================================
 # Helper: evaluar si un animal cumple los filtros del grupo
 # =========================================================
+def _evaluar_animal_con_filtros(animal, dias_minimos_posparto, excluir_prenadas,
+                                edad_minima_dias, peso_minimo_kg, hoy=None):
+    """
+    Versión de _evaluar_animal_para_grupo que recibe los filtros directamente
+    (sin necesitar un GrupoServicio guardado). Devuelve (cumple: bool, motivos: [str]).
+    """
+    hoy     = hoy or timezone.now().date()
+    motivos = []
+
+    if animal.sexo != SexoBovino.HEMBRA:
+        motivos.append("no es hembra")
+
+    if edad_minima_dias and animal.fecha_nacimiento:
+        edad = (hoy - animal.fecha_nacimiento).days
+        if edad < edad_minima_dias:
+            motivos.append(f"edad {edad}d < {edad_minima_dias}d")
+
+    if peso_minimo_kg:
+        peso = animal.ultimo_peso
+        if peso is None:
+            motivos.append("sin peso registrado")
+        elif float(peso) < float(peso_minimo_kg):
+            motivos.append(f"peso {peso}kg < {peso_minimo_kg}kg")
+
+    if dias_minimos_posparto:
+        ult_parto = (
+            EventoReproductivo.objects
+            .filter(madre=animal, fecha_parto__isnull=False)
+            .order_by("-fecha_parto")
+            .first()
+        )
+        if ult_parto:
+            dias = (hoy - ult_parto.fecha_parto).days
+            if dias < dias_minimos_posparto:
+                motivos.append(f"posparto {dias}d < {dias_minimos_posparto}d")
+
+    if excluir_prenadas:
+        prenada = EventoReproductivo.objects.filter(
+            madre=animal,
+            es_efectivo=True,
+            resultado_tacto=ResultadoTacto.PRENADA,
+            fecha_parto__isnull=True,
+        ).exists()
+        if prenada:
+            motivos.append("preñada")
+
+    return (len(motivos) == 0, motivos)
+
+
 def _evaluar_animal_para_grupo(animal, grupo, hoy=None):
     """
     Devuelve (cumple: bool, motivos_no_cumple: [str])
@@ -688,10 +961,70 @@ def vista_lista_bovinos(request):
     )
     if empresa:
         qs = qs.filter(rodeo__establecimiento__empresa=empresa)
-    bovinos = qs.order_by("-id")
+
+    # ── Filtros GET ───────────────────────────────────────────────
+    q         = request.GET.get("q", "").strip()
+    estab_id  = request.GET.get("establecimiento", "")
+    rodeo_id  = request.GET.get("rodeo", "")
+    cat_id    = request.GET.get("categoria", "")
+    sexo      = request.GET.get("sexo", "")
+    activo    = request.GET.get("activo", "1")  # default: solo activos
+
+    if q:
+        # caravana_senasa = "PU045-A002" donde PU045 es del establecimiento,
+        # A = senasa_prefijo_animal, 002 = senasa_numero_animal
+        if "-" in q:
+            parte_animal = q.split("-", 1)[1]  # "A002"
+            prefijo_a = parte_animal[:1]        # "A"
+            numero_a  = parte_animal[1:]        # "002"
+            qs = qs.filter(
+                (Q(senasa_prefijo_animal__iexact=prefijo_a) & Q(senasa_numero_animal__icontains=numero_a))
+                | Q(numero_nacimiento__icontains=q)
+                | Q(nombre_apodo__icontains=q)
+            )
+        else:
+            qs = qs.filter(
+                Q(senasa_prefijo_animal__icontains=q)
+                | Q(senasa_numero_animal__icontains=q)
+                | Q(numero_nacimiento__icontains=q)
+                | Q(nombre_apodo__icontains=q)
+            )
+    if estab_id:
+        qs = qs.filter(rodeo__establecimiento_id=estab_id)
+    if rodeo_id:
+        qs = qs.filter(rodeo_id=rodeo_id)
+    if cat_id:
+        qs = qs.filter(categoria_actual_id=cat_id)
+    if sexo:
+        qs = qs.filter(sexo=sexo)
+    if activo == "1":
+        qs = qs.filter(activo=True)
+    elif activo == "0":
+        qs = qs.filter(activo=False)
+
+    # Opciones para los selects de filtro
+    from .models import CategoriaBovino
+    establecimientos_opt = (
+        Establecimiento.objects.filter(empresa=empresa).order_by("nombre")
+        if empresa else Establecimiento.objects.none()
+    )
+    rodeos_opt = (
+        Rodeo.objects.filter(establecimiento__empresa=empresa).order_by("nombre")
+        if empresa else Rodeo.objects.none()
+    )
+    categorias_opt = CategoriaBovino.objects.order_by("nombre")
 
     return render(request, "vista_lista_bovinos.html", {
-        "bovinos": bovinos,
+        "bovinos":           qs.order_by("-id"),
+        "filtros": {
+            "q": q, "establecimiento": estab_id, "rodeo": rodeo_id,
+            "categoria": cat_id, "sexo": sexo, "activo": activo,
+        },
+        "establecimientos_opt": establecimientos_opt,
+        "rodeos_opt":           rodeos_opt,
+        "categorias_opt":       categorias_opt,
+        "sexo_choices":         SexoBovino.choices,
+        "total":                qs.count(),
     })
 
 @login_required
@@ -1170,3 +1503,231 @@ def vista_crear_ternero_desde_evento(request, id):
         "subrazas": subrazas,
         "estados_vida": estados_vida,
     })
+
+# =========================================================
+# SESIONES SANITARIAS
+# =========================================================
+
+@login_required
+def vista_lista_sesiones_sanitarias(request):
+    empresa = get_empresa(request)
+    qs = SesionSanitaria.objects.select_related("establecimiento", "insumo")
+    if empresa:
+        qs = qs.filter(establecimiento__empresa=empresa)
+    return render(request, "sanidad/lista_sesiones.html", {
+        "sesiones": qs.order_by("-fecha", "-id"),
+    })
+
+
+@login_required
+def vista_crear_sesion_sanitaria(request):
+    empresa = get_empresa(request)
+    form = SesionSanitariaForm(empresa=empresa)
+
+    if request.method == "POST":
+        form = SesionSanitariaForm(request.POST, empresa=empresa)
+        if form.is_valid():
+            sesion = form.save()
+
+            animal_ids_raw = request.POST.get("animal_ids", "")
+            try:
+                animal_ids = [int(x) for x in animal_ids_raw.split(",") if x.strip()]
+            except ValueError:
+                animal_ids = []
+
+            animales = AnimalBovino.objects.filter(
+                id__in=animal_ids,
+                rodeo__establecimiento=sesion.establecimiento,
+                activo=True,
+            )
+            for animal in animales:
+                RegistroSanitario.objects.create(
+                    sesion              = sesion,
+                    animal              = animal,
+                    tipo_evento         = sesion.tipo_sanitario,
+                    nombre              = sesion.nombre_evento,
+                    producto            = sesion.insumo.nombre if sesion.insumo else "",
+                    dosis               = sesion.dosis or "",
+                    lote                = sesion.lote or "",
+                    fecha               = sesion.fecha,
+                    requiere_refuerzo   = sesion.requiere_refuerzo,
+                    dias_hasta_refuerzo = sesion.dias_hasta_refuerzo,
+                    observaciones       = sesion.observaciones or "",
+                )
+            messages.success(request, _(f"Sesión sanitaria registrada para {animales.count()} animales."))
+            return redirect("vista_detalle_sesion_sanitaria", id=sesion.pk)
+
+    return render(request, "sanidad/crear_sesion.html", {
+        "form": form,
+    })
+
+
+@login_required
+def vista_detalle_sesion_sanitaria(request, id):
+    empresa = get_empresa(request)
+    qs      = SesionSanitaria.objects.select_related("establecimiento", "insumo")
+    if empresa:
+        qs = qs.filter(establecimiento__empresa=empresa)
+    sesion    = get_object_or_404(qs, pk=id)
+    registros = sesion.registros.select_related(
+        "animal", "animal__rodeo", "animal__categoria_actual"
+    ).order_by("animal__rodeo__nombre", "animal__id")
+    return render(request, "sanidad/detalle_sesion.html", {
+        "sesion":    sesion,
+        "registros": registros,
+    })
+
+
+def ajax_animales_para_sesion(request):
+    """
+    GET /sanidad/ajax/animales/?establecimiento=<id>&rodeos=1,2,3
+    Devuelve los animales de los rodeos indicados en formato chip.
+    Si no se pasan rodeos, devuelve todos los del establecimiento.
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({"animales": []}, status=403)
+
+    estab_id   = request.GET.get("establecimiento")
+    rodeos_raw = request.GET.get("rodeos", "")
+
+    if not estab_id:
+        return JsonResponse({"animales": []})
+
+    try:
+        estab_id  = int(estab_id)
+        rodeo_ids = [int(x) for x in rodeos_raw.split(",") if x.strip()]
+    except (ValueError, TypeError):
+        return JsonResponse({"animales": []})
+
+    qs = AnimalBovino.objects.filter(
+        rodeo__establecimiento_id=estab_id,
+        activo=True,
+    ).select_related("rodeo", "categoria_actual")
+
+    if rodeo_ids:
+        qs = qs.filter(rodeo_id__in=rodeo_ids)
+
+    data = [
+        {
+            "id":           a.id,
+            "caravana":     a.caravana_senasa or a.tatuaje or f"#{a.id}",
+            "rodeo":        a.rodeo.nombre,
+            "categoria":    str(a.categoria_actual) if a.categoria_actual else "",
+            "edad_display": a.edad_display or "",
+        }
+        for a in qs.order_by("rodeo__nombre", "-fecha_nacimiento")
+    ]
+    return JsonResponse({"animales": data})
+
+
+# ── Registro masivo de mediciones ────────────────────────────────────────────
+
+@login_required
+def vista_registro_masivo_mediciones(request):
+    empresa = get_empresa(request)
+
+    establecimientos_opt = (
+        Establecimiento.objects.filter(empresa=empresa).order_by("nombre")
+        if empresa else Establecimiento.objects.none()
+    )
+    tipos_opt = TipoMedicion.objects.filter(activo=True).order_by("nombre")
+
+    guardados = 0
+
+    if request.method == "POST":
+        fecha        = request.POST.get("fecha")
+        tipo_id      = request.POST.get("tipo_medicion")
+        animal_ids   = request.POST.getlist("animal_ids")
+
+        try:
+            from datetime import date as date_cls
+            tipo = TipoMedicion.objects.get(pk=tipo_id)
+            fecha_obj = date_cls.fromisoformat(fecha)
+        except Exception:
+            messages.error(request, "Fecha o tipo de medición inválidos.")
+            return redirect("vista_registro_masivo_mediciones")
+
+        for aid in animal_ids:
+            try:
+                animal = AnimalBovino.objects.get(pk=aid, activo=True)
+            except AnimalBovino.DoesNotExist:
+                continue
+
+            def dec(val):
+                if val is None or str(val).strip() == "":
+                    return None
+                try:
+                    from decimal import Decimal
+                    return Decimal(str(val).replace(",", "."))
+                except Exception:
+                    return None
+
+            peso = dec(request.POST.get(f"peso_{aid}"))
+            ce   = dec(request.POST.get(f"ce_{aid}"))
+            gim  = dec(request.POST.get(f"gim_{aid}"))
+            aob  = dec(request.POST.get(f"aob_{aid}"))
+            gd   = dec(request.POST.get(f"gd_{aid}"))
+            gc   = dec(request.POST.get(f"gc_{aid}"))
+            obs  = request.POST.get(f"obs_{aid}", "").strip()
+
+            if any(v is not None for v in [peso, ce, gim, aob, gd, gc]) or obs:
+                MedicionAnimal.objects.update_or_create(
+                    animal=animal, fecha=fecha_obj, tipo_medicion=tipo,
+                    defaults=dict(
+                        peso=peso, circunferencia_escrotal=ce,
+                        gim=gim, aob=aob, gd=gd, gc=gc,
+                        observaciones=obs or None,
+                    )
+                )
+                guardados += 1
+
+        if guardados:
+            messages.success(request, f"Se guardaron mediciones para {guardados} animales.")
+        else:
+            messages.warning(request, "No se ingresaron datos para guardar.")
+        return redirect("vista_registro_masivo_mediciones")
+
+    return render(request, "mediciones/registro_masivo.html", {
+        "establecimientos_opt": establecimientos_opt,
+        "tipos_opt":            tipos_opt,
+    })
+
+
+@login_required
+def ajax_animales_para_medicion(request):
+    """
+    GET /mediciones/ajax/animales/?establecimiento=<id>
+    Devuelve todos los animales activos del establecimiento con último peso.
+    """
+    empresa  = get_empresa(request)
+    estab_id = request.GET.get("establecimiento", "")
+
+    if not estab_id:
+        return JsonResponse({"animales": []})
+
+    try:
+        estab_id = int(estab_id)
+    except (ValueError, TypeError):
+        return JsonResponse({"animales": []})
+
+    if empresa and not Establecimiento.objects.filter(pk=estab_id, empresa=empresa).exists():
+        return JsonResponse({"animales": []})
+
+    qs = (
+        AnimalBovino.objects
+        .filter(rodeo__establecimiento_id=estab_id, activo=True)
+        .select_related("rodeo", "categoria_actual")
+        .order_by("rodeo__nombre", "senasa_prefijo_animal", "senasa_numero_animal", "id")
+    )
+
+    data = [
+        {
+            "id":          a.id,
+            "caravana":    a.caravana_senasa or a.tatuaje or f"#{a.id}",
+            "rodeo":       a.rodeo.nombre if a.rodeo else "",
+            "categoria":   str(a.categoria_actual) if a.categoria_actual else "—",
+            "ultimo_peso": str(a.ultimo_peso) if a.ultimo_peso else "",
+        }
+        for a in qs
+    ]
+    return JsonResponse({"animales": data})

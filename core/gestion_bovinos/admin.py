@@ -8,6 +8,7 @@ from .models import (
     EventoGrupoServicio,
     DiagnosticoPreñezRodeo,
     ResultadoDiagnosticoAnimal,
+    ConfigFiltroReproductivo,
 )
 
 
@@ -84,3 +85,13 @@ class DiagnosticoPreñezRodeoAdmin(BaseAdmin):
     readonly_fields = ("total_diagnosticadas", "total_prenadas", "total_vacias", "pct_prenez")
     inlines         = [ResultadoDiagnosticoAnimalInline]
     ordering        = ("-fecha", "-id")
+
+
+# =========================================================
+# Config filtro reproductivo por establecimiento
+# =========================================================
+
+@admin.register(ConfigFiltroReproductivo)
+class ConfigFiltroReproductivoAdmin(BaseAdmin):
+    list_display  = ("establecimiento", "dias_minimos_posparto", "excluir_prenadas", "edad_minima_dias", "peso_minimo_kg")
+    search_fields = ("establecimiento__nombre",)

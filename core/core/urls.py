@@ -11,16 +11,20 @@ from gestion_bovinos.views import (
     vista_crear_grupo_servicio,
     vista_editar_grupo_servicio,
     vista_detalle_grupo_servicio,
+    vista_crear_grupo_con_seleccion,
 
     ajax_rodeos_por_establecimiento,
     ajax_animales_del_rodeo_para_grupo,
     ajax_buscar_animal_para_grupo,
     ajax_agregar_miembros,
     ajax_quitar_miembro,
+    ajax_animales_para_nuevo_grupo,
+    ajax_config_filtro_establecimiento,
 
     ajax_agregar_evento_grupo,
     ajax_eliminar_evento_grupo,
     vista_diagnostico_grupo,
+    vista_parametros_sistema,
 
     vista_lista_bovinos,
     vista_crear_bovino,
@@ -33,6 +37,13 @@ from gestion_bovinos.views import (
     vista_crear_evento_reproductivo,
     vista_detalle_evento_reproductivo,
     vista_crear_ternero_desde_evento,
+
+    vista_lista_sesiones_sanitarias,
+    vista_crear_sesion_sanitaria,
+    vista_detalle_sesion_sanitaria,
+    ajax_animales_para_sesion,
+    vista_registro_masivo_mediciones,
+    ajax_animales_para_medicion,
 )
 
 urlpatterns = [
@@ -52,10 +63,13 @@ urlpatterns = [
 
     # Grupos
     path("grupos/", vista_crear_grupo_servicio, name="grupo_servicio_crear"),
+    path("grupos/nuevo/", vista_crear_grupo_con_seleccion, name="grupo_servicio_nuevo"),
     path("grupos/<int:id>/editar/", vista_editar_grupo_servicio, name="grupo_servicio_editar"),
     path("grupos/<int:id>/", vista_detalle_grupo_servicio, name="grupo_servicio_detalle"),
     # AJAX
     path("ajax/rodeos/", ajax_rodeos_por_establecimiento, name="ajax_rodeos_por_establecimiento"),
+    path("ajax/animales-nuevo-grupo/", ajax_animales_para_nuevo_grupo, name="ajax_animales_para_nuevo_grupo"),
+    path("ajax/config-filtro/", ajax_config_filtro_establecimiento, name="ajax_config_filtro_establecimiento"),
     path("grupos/<int:pk>/ajax/animales-rodeo/", ajax_animales_del_rodeo_para_grupo, name="ajax_animales_del_rodeo_para_grupo"),
     path("grupos/<int:pk>/ajax/buscar/", ajax_buscar_animal_para_grupo, name="ajax_buscar_animal_para_grupo"),
     path("grupos/<int:pk>/ajax/agregar-miembros/", ajax_agregar_miembros, name="ajax_agregar_miembros"),
@@ -63,6 +77,9 @@ urlpatterns = [
     path("grupos/<int:pk>/ajax/agregar-evento/", ajax_agregar_evento_grupo, name="ajax_agregar_evento_grupo"),
     path("grupos/<int:pk>/ajax/eliminar-evento/<int:evento_pk>/", ajax_eliminar_evento_grupo, name="ajax_eliminar_evento_grupo"),
     path("grupos/<int:pk>/diagnostico/", vista_diagnostico_grupo, name="vista_diagnostico_grupo"),
+
+    # Configuración
+    path("configuracion/parametros/", vista_parametros_sistema, name="vista_parametros_sistema"),
 
     # Bovinos
     path("bovinos/", vista_lista_bovinos, name="vista_lista_bovinos"),
@@ -77,4 +94,14 @@ urlpatterns = [
     path("eventos-reproductivos/crear/", vista_crear_evento_reproductivo, name="vista_crear_evento_reproductivo"),
     path("eventos-reproductivos/<int:id>/", vista_detalle_evento_reproductivo, name="vista_detalle_evento_reproductivo"),
     path("eventos-reproductivos/<int:id>/crear-ternero/", vista_crear_ternero_desde_evento, name="vista_crear_ternero_desde_evento"),
+
+    # Sesiones sanitarias
+    path("sanidad/", vista_lista_sesiones_sanitarias, name="vista_lista_sesiones_sanitarias"),
+    path("sanidad/crear/", vista_crear_sesion_sanitaria, name="vista_crear_sesion_sanitaria"),
+    path("sanidad/<int:id>/", vista_detalle_sesion_sanitaria, name="vista_detalle_sesion_sanitaria"),
+    path("sanidad/ajax/animales/", ajax_animales_para_sesion, name="ajax_animales_para_sesion"),
+
+    # Mediciones masivas
+    path("mediciones/", vista_registro_masivo_mediciones, name="vista_registro_masivo_mediciones"),
+    path("mediciones/ajax/animales/", ajax_animales_para_medicion, name="ajax_animales_para_medicion"),
 ]

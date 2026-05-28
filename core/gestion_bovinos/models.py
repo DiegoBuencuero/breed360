@@ -221,6 +221,7 @@ class GrupoServicio(ControlModel):
         'PadreGenetico', verbose_name=_("Padre genético"),
         on_delete=models.PROTECT, related_name="grupos_servicio",
         help_text=_("Padre único asignado a todo el grupo."),
+        blank=True, null=True,
     )
     fecha_inicio          = models.DateField(_("Fecha de inicio"))
     fecha_fin_prevista    = models.DateField(_("Fecha fin prevista"), blank=True, null=True)
@@ -606,6 +607,26 @@ class Establecimiento(ControlModel):
             return (siguiente, "001")
         return (prefijo, str(numero + 1).zfill(3))
  
+class ConfigFiltroReproductivo(ControlModel):
+    """Valores por defecto de filtros reproductivos para un establecimiento.
+    Se usan para pre-llenar un nuevo GrupoServicio al momento de crearlo."""
+    establecimiento       = models.OneToOneField(
+        Establecimiento, verbose_name=_("Establecimiento"),
+        on_delete=models.CASCADE, related_name="config_filtro_reproductivo",
+    )
+    dias_minimos_posparto = models.PositiveIntegerField(_("Días mínimos posparto"), default=45)
+    excluir_prenadas      = models.BooleanField(_("Excluir preñadas"), default=True)
+    edad_minima_dias      = models.PositiveIntegerField(_("Edad mínima (días)"), blank=True, null=True)
+    peso_minimo_kg        = models.DecimalField(_("Peso mínimo (kg)"), max_digits=8, decimal_places=2, blank=True, null=True)
+
+    class Meta:
+        verbose_name        = _("Config. filtro reproductivo")
+        verbose_name_plural = _("Config. filtros reproductivos")
+
+    def __str__(self):
+        return f"Filtros reproductivos — {self.establecimiento}"
+
+
 class Rodeo(ControlModel):
     establecimiento = models.ForeignKey(Establecimiento, verbose_name=_("Establecimiento"), on_delete=models.PROTECT, related_name="rodeos")
     tipo            = models.ForeignKey(TipoRodeo,       verbose_name=_("Tipo de rodeo"),   on_delete=models.PROTECT, related_name="rodeos")
@@ -1083,9 +1104,64 @@ class TipoSanitario(models.TextChoices):
     TRATAMIENTO     = "TRATAMIENTO",     _("Tratamiento")
     DESPARASITACION = "DESPARASITACION", _("Desparasitación")
     OTRO            = "OTRO",            _("Otro")
- 
- 
+
+
+# =========================================================
+# SESIÓN SANITARIA (evento masivo por rodeo / establecimiento)
+# =========================================================
+
+class SesionSanitaria(ControlModel):
+    """
+    Cabecera de un evento sanitario masivo.
+    Agrupa los RegistroSanitario individuales creados en una misma
+    jornada sobre uno o varios rodeos.
+    """
+    establecimiento     = models.ForeignKey(
+        Establecimiento, verbose_name=_("Establecimiento"),
+        on_delete=models.PROTECT, related_name="sesiones_sanitarias",
+    )
+    fecha               = models.DateField(_("Fecha"))
+    tipo_sanitario      = models.CharField(
+        _("Tipo"), max_length=20,
+        choices=TipoSanitario.choices,
+        default=TipoSanitario.VACUNA,
+    )
+    nombre_evento       = models.CharField(_("Nombre del evento"), max_length=100)
+    insumo              = models.ForeignKey(
+        Insumo, verbose_name=_("Insumo / Producto"),
+        on_delete=models.PROTECT, related_name="sesiones_sanitarias",
+        blank=True, null=True,
+    )
+    dosis               = models.CharField(_("Dosis"),    max_length=50, blank=True, null=True)
+    lote                = models.CharField(_("Lote"),     max_length=50, blank=True, null=True)
+    via_admin           = models.CharField(
+        _("Vía de administración"), max_length=10,
+        choices=ViaAdministracion.choices,
+        blank=True, null=True,
+    )
+    requiere_refuerzo   = models.BooleanField(_("Requiere refuerzo"), default=False)
+    dias_hasta_refuerzo = models.PositiveIntegerField(_("Días hasta refuerzo"), blank=True, null=True)
+    observaciones       = models.TextField(_("Observaciones"), blank=True, null=True)
+
+    class Meta:
+        verbose_name        = _("Sesión sanitaria")
+        verbose_name_plural = _("Sesiones sanitarias")
+        ordering            = ["-fecha", "-id"]
+
+    def __str__(self):
+        return f"{self.nombre_evento} — {self.fecha}"
+
+    @property
+    def total_animales(self):
+        return self.registros.count()
+
+
 class RegistroSanitario(ControlModel):
+    sesion              = models.ForeignKey(
+        SesionSanitaria, verbose_name=_("Sesión sanitaria"),
+        on_delete=models.SET_NULL, related_name="registros",
+        blank=True, null=True,
+    )
     animal              = models.ForeignKey(AnimalBovino, verbose_name=_("Animal"), on_delete=models.CASCADE, related_name="sanitarios")
     tipo_evento         = models.CharField(_("Tipo de evento"), max_length=20, choices=TipoSanitario.choices, default=TipoSanitario.VACUNA)
     nombre              = models.CharField(_("Evento"),   max_length=100)
