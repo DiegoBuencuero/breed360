@@ -46,6 +46,7 @@ from .models import (
 
 from .forms import (
     BovinoForm,
+    RodeoForm,
     MovimientoRodeoForm,
     EventoReproductivoForm,
     EstablecimientoForm,
@@ -911,6 +912,8 @@ def ajax_quitar_miembro(request, pk):
 # =========================================================
 
 def vista_crear_establecimiento(request, id=None):
+    empresa = request.user.profile.empresa
+    establecimientos = Establecimiento.objects.filter(empresa=empresa)
     modificacion = id is not None
 
     if modificacion:
@@ -924,14 +927,16 @@ def vista_crear_establecimiento(request, id=None):
             nombre = establecimiento.nombre
             establecimiento.delete()
             messages.success(request, _(f'Establecimiento "{nombre}" eliminado correctamente.'))
-            return redirect('vista_lista_establecimientos')
+            return redirect('vista_crear_establecimiento')
 
         form = EstablecimientoForm(request.POST, instance=establecimiento)
         if form.is_valid():
-            form.save()
+            establecimiento_obj = form.save(commit=False)
+            establecimiento_obj.empresa = empresa
+            establecimiento_obj.save()
             accion = 'actualizado' if modificacion else 'creado'
-            messages.success(request, _(f'Establecimiento "{form.instance.nombre}" {accion} correctamente.'))
-            return redirect('vista_lista_establecimientos')
+            messages.success(request, _(f'Establecimiento "{establecimiento_obj.nombre}" {accion} correctamente.'))
+            return redirect('vista_crear_establecimiento')
 
     else:
         form = EstablecimientoForm(instance=establecimiento)
@@ -940,14 +945,90 @@ def vista_crear_establecimiento(request, id=None):
         'form':            form,
         'modificacion':    modificacion,
         'establecimiento': establecimiento,
-    })
-
-
-def vista_lista_establecimientos(request):
-    establecimientos = Establecimiento.objects.all()
-    return render(request, 'vista_lista_establecimientos.html', {
         'establecimientos': establecimientos,
     })
+
+# =========================================================
+# RODEOS
+# =========================================================
+
+@login_required
+def vista_lista_rodeos(request):
+    empresa = get_empresa(request)
+    establecimientos = Establecimiento.objects.filter(empresa=empresa)
+    establecimiento_id = request.GET.get('establecimiento')
+
+    if establecimiento_id:
+        rodeos = Rodeo.objects.filter(
+            establecimiento_id=establecimiento_id,
+            establecimiento__empresa=empresa
+        ).select_related('establecimiento', 'tipo').order_by('nombre')
+    else:
+        rodeos = Rodeo.objects.filter(
+            establecimiento__empresa=empresa
+        ).select_related('establecimiento', 'tipo').order_by('establecimiento__nombre', 'nombre')
+
+    return render(request, 'vista_lista_rodeos.html', {
+        'rodeos': rodeos,
+        'establecimientos': establecimientos,
+        'establecimiento_id': establecimiento_id,
+    })
+
+@login_required
+def vista_crear_rodeo(request, id=None):
+    empresa = get_empresa(request)
+    modificacion = id is not None
+
+    if modificacion:
+        rodeo = get_object_or_404(Rodeo, pk=id, establecimiento__empresa=empresa)
+        establecimiento_id = rodeo.establecimiento_id
+    else:
+        rodeo = None
+        establecimiento_id = request.GET.get('establecimiento') or request.POST.get('establecimiento')
+
+    if request.method == 'POST':
+        if 'borrar' in request.POST and modificacion:
+            if rodeo.animales.exists():
+                messages.error(request, _('No se puede eliminar un rodeo que tiene animales. Elimina primero los animales o muévelos a otro rodeo.'))
+            else:
+                nombre = rodeo.nombre
+                rodeo.delete()
+                messages.success(request, _(f'Rodeo "{nombre}" eliminado correctamente.'))
+                return redirect('vista_lista_rodeos')
+
+        form = RodeoForm(request.POST, instance=rodeo)
+        if form.is_valid():
+            rodeo_obj = form.save(commit=False)
+            if not modificacion:
+                if not establecimiento_id:
+                    messages.error(request, _('Debe seleccionar un establecimiento.'))
+                else:
+                    try:
+                        rodeo_obj.establecimiento_id = int(establecimiento_id)
+                        rodeo_obj.save()
+                        messages.success(request, _(f'Rodeo "{rodeo_obj.nombre}" creado correctamente.'))
+                        return redirect('vista_lista_rodeos')
+                    except (ValueError, Establecimiento.DoesNotExist):
+                        messages.error(request, _('Establecimiento inválido.'))
+            else:
+                rodeo_obj.save()
+                messages.success(request, _('Rodeo actualizado correctamente.'))
+                return redirect('vista_lista_rodeos')
+    else:
+        form = RodeoForm(instance=rodeo)
+
+    establecimientos = Establecimiento.objects.filter(empresa=empresa)
+    if not establecimiento_id and not modificacion and establecimientos.exists():
+        establecimiento_id = establecimientos.first().id
+
+    return render(request, 'vista_crear_rodeo.html', {
+        'form': form,
+        'modificacion': modificacion,
+        'rodeo': rodeo,
+        'establecimiento_id': establecimiento_id,
+        'establecimientos': establecimientos,
+    })
+
 # =========================================================
 # BOVINOS
 # =========================================================
@@ -1061,15 +1142,15 @@ def vista_editar_bovino(request, id):
         if form.is_valid():
             bovino = form.save()
             messages.success(request, "Bovino actualizado correctamente.")
-            return redirect("vista_detalle_bovino", id=bovino.id)
+            return redirect("vista_lista_bovinos")
         messages.error(request, "Hubo errores en el formulario.")
     else:
         form = BovinoForm(instance=bovino, empresa=empresa)
 
-    return render(request, "form.html", {
+    return render(request, "vista_agregar_bovino.html", {
         "form": form,
         "modificacion": True,
-        "bovino": bovino,
+        "object": bovino,
     })
 
 @login_required

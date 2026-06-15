@@ -190,7 +190,7 @@ class ConfigGDPInline(admin.StackedInline):
 
 @admin.register(Establecimiento)
 class EstablecimientoAdmin(BaseAdmin):
-    list_display        = ("id", "nombre", "empresa", "ciudad", "codigo", "senasa_prefijo", "activo")
+    list_display        = ("id", "nombre", "empresa", "ciudad", "codigo", "patron_codigo_interno", "senasa_prefijo", "activo")
     search_fields       = ("nombre", "codigo", "empresa__nombre", "ciudad__nombre")
     list_filter         = ("empresa", "ciudad", "activo")
     autocomplete_fields = ("empresa", "ciudad")
@@ -280,29 +280,30 @@ class EventoReproductivoInline(admin.TabularInline):
 @admin.register(AnimalBovino)
 class AnimalBovinoAdmin(BaseAdmin):
     list_display = (
-        "id", "caravana_senasa", "tatuaje", "nombre_apodo",
+        "id", "codigo_interno", "caravana_senasa", "tatuaje", "nombre_apodo",
         "sexo", "fecha_nacimiento", "get_edad", "categoria_actual",
         "get_ultimo_peso", "get_peso_estimado",
         "rodeo", "get_establecimiento", "get_empresa",
         "raza", "estado_vida", "activo",
     )
     search_fields = (
+        "codigo_interno",
         "nombre_apodo", "color",
         "numero_nacimiento",
         "senasa_prefijo_animal", "senasa_numero_animal",
         "rodeo__nombre", "rodeo__establecimiento__nombre",
         "rodeo__establecimiento__empresa__nombre",
-        "raza__nombre", "subraza__nombre",
+        "raza__nombre",
         "madre__nombre_apodo", "madre__numero_nacimiento",
         "padre_genetico__codigo", "padre_genetico__nombre",
     )
     list_filter = (
-        "sexo", "estado_vida", "raza", "subraza",
+        "sexo", "estado_vida", "raza",
         "categoria_actual", "estado_reproductivo",
         "destino_productivo", "rodeo", "activo",
     )
     autocomplete_fields = (
-        "rodeo", "raza", "subraza", "madre", "padre_genetico",
+        "rodeo", "raza", "madre", "padre_genetico",
         "categoria_actual", "estado_reproductivo",
         "destino_productivo", "estado_vida",
     )

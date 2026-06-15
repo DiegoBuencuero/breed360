@@ -1,0 +1,70 @@
+Hola! 👋
+
+Espero se encuentren bien. Quería compartirles las novedades del sistema Innobreed.
+
+✅ BUENAS NOTICIAS:
+Hemos agregado una funcionalidad muy útil: ahora cuando realizan una SINCRONIZACIÓN DE CELO, TACTO o VACUNACIÓN, pueden agregar TAREAS ADICIONALES que se asignan automáticamente a los animales.
+
+Por ejemplo, en una SINCRONIZACIÓN pueden seleccionar:
+✓ Pesar animales
+✓ Aplicar antibiótico
+✓ Revisar mastitis
+✓ Antiparasitario
+✓ Condición corporal
+
+Una acción genera múltiples tareas coordinadas y el sistema registra quién hizo qué y cuándo 📊
+
+---
+
+📋 INFORMACIÓN QUE NECESITAMOS:
+
+Para completar el sistema en las próximas 3-4 semanas, nos falta:
+
+1️⃣ CALENDARIO DE VACUNACIÓN
+El calendario que usan actualmente en la cabaña (terneros, vaquillas, vacas, toros)
+- Para cada vacuna: edad, nombre, dosis, vía, si requiere refuerzo
+- Obligatoria o recomendada
+- Laboratorio que usan
+
+2️⃣ CARACTERÍSTICAS DE RODEOS
+Descripción de los rodeos que manejan:
+- Nombre del rodeo y tipo (cría, recría, lechería, etc.)
+- Categorías: edad, peso, alimentación, ubicación
+- Características especiales de cada categoría
+
+3️⃣ CAMBIOS DE CATEGORÍA
+Criterios para pasar de una categoría a otra:
+- Edad mínima
+- Peso mínimo
+- Requisitos sanitarios
+- Vacunaciones necesarias
+
+---
+
+📨 ¿CÓMO ENVÍAN LA INFO?
+
+Pueden enviarlo de varias formas:
+- Excel (lo más fácil)
+- Word
+- PDF
+- Foto de un documento
+
+Cualquier formato está bien 👍
+
+---
+
+📱 ENVÍENLO A:
+[Tu email]
+
+⏰ PLAZO: Esta semana si es posible
+
+---
+
+Una vez tengamos eso, comenzamos:
+Semana 1: Correcciones seguridad
+Semana 2-4: Fase 1 (Sanidad, Reproducción, Manejo)
+Fin mes 1: Sistema 100% operativo ✅
+
+¿Alguna duda? Quedo atenta 😊
+
+Saludos!

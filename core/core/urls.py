@@ -5,8 +5,9 @@ from agro.views import login_page
 
 from gestion_bovinos.views import (
     index,
-    vista_lista_establecimientos,
     vista_crear_establecimiento,
+    vista_lista_rodeos,
+    vista_crear_rodeo,
 
     vista_crear_grupo_servicio,
     vista_editar_grupo_servicio,
@@ -57,9 +58,13 @@ urlpatterns = [
     path("accounts/", include("django.contrib.auth.urls")),
 
     # Establecimientos
-    path("establecimientos/", vista_lista_establecimientos, name="vista_lista_establecimientos"),
-    path("establecimientos/crear/", vista_crear_establecimiento, name="vista_crear_establecimiento"),
+    path("establecimientos/", vista_crear_establecimiento, name="vista_crear_establecimiento"),
     path("establecimientos/<int:id>/editar/", vista_crear_establecimiento, name="vista_editar_establecimiento"),
+
+    # Rodeos
+    path("rodeos/", vista_lista_rodeos, name="vista_lista_rodeos"),
+    path("rodeos/crear/", vista_crear_rodeo, name="vista_crear_rodeo"),
+    path("rodeos/<int:id>/editar/", vista_crear_rodeo, name="vista_editar_rodeo"),
 
     # Grupos
     path("grupos/", vista_crear_grupo_servicio, name="grupo_servicio_crear"),

@@ -7,13 +7,6 @@ from django.dispatch import receiver
 from datetime import timedelta
 from agro.models import Empresa, Unidad, Moneda, Ciudad, Proveedor
 
-
-
-
-
-# =========================================================
-# BASES
-# =========================================================
  
 class ControlModel(models.Model):
     created_at = models.DateTimeField(_("Fecha de creación"),    auto_now_add=True)
@@ -553,6 +546,13 @@ class Establecimiento(ControlModel):
     ciudad        = models.ForeignKey(Ciudad,  verbose_name=_("Ciudad"),  on_delete=models.PROTECT, related_name="establecimientos")
     nombre        = models.CharField(_("Nombre"),    max_length=150)
     codigo        = models.CharField(_("Código"),    max_length=50,  blank=True, null=True)
+    patron_codigo_interno = models.CharField(
+        _("Patrón código interno animal"),
+        max_length=20,
+        blank=True,
+        null=True,
+        help_text=_("Ej: 'AA-0000' generará AA-0001, AA-0002... o '0000' generará 0001, 0002..."),
+    )
     ubicacion     = models.CharField(_("Ubicación"), max_length=255, blank=True, null=True)
     activo        = models.BooleanField(_("Activo"), default=True)
     observaciones = models.TextField(_("Observaciones"), blank=True, null=True)
@@ -606,6 +606,68 @@ class Establecimiento(ControlModel):
                 raise ValidationError(_("Se agotaron todos los códigos SENASA (Z999)."))
             return (siguiente, "001")
         return (prefijo, str(numero + 1).zfill(3))
+
+    def siguiente_codigo_interno(self):
+        """Genera el siguiente código interno basado en el patrón definido."""
+        if not self.patron_codigo_interno:
+            return None
+
+        # Buscar el último código interno usado
+        ultimo = (
+            AnimalBovino.objects
+            .filter(rodeo__establecimiento=self, codigo_interno__isnull=False)
+            .exclude(codigo_interno="")
+            .order_by("-codigo_interno")
+            .values_list("codigo_interno", flat=True)
+            .first()
+        )
+
+        patron = self.patron_codigo_interno
+
+        # Extraer la parte numérica del patrón (últimos dígitos antes del 0)
+        import re
+        match = re.match(r'^(.*?)(\d+)$', patron)
+        if not match:
+            raise ValidationError(_("Patrón inválido. Debe terminar con dígitos. Ej: 'AA-0000'"))
+
+        prefijo_patron = match.group(1)  # Ej: "AA-"
+        longitud_numero = len(match.group(2))  # Ej: 4
+
+        if ultimo:
+            # Extraer número del último código
+            ultimo_match = re.match(r'^(.*?)(\d+)$', ultimo)
+            if ultimo_match:
+                ultimo_numero = int(ultimo_match.group(2))
+                siguiente_numero = ultimo_numero + 1
+            else:
+                siguiente_numero = 1
+        else:
+            siguiente_numero = 1
+
+        # Generar código con mismo formato
+        codigo_numero = str(siguiente_numero).zfill(longitud_numero)
+        return f"{prefijo_patron}{codigo_numero}"
+
+    def save(self, *args, **kwargs):
+        """Auto-generar código si es nuevo establecimiento."""
+        es_nuevo = self.pk is None
+        if es_nuevo and not self.codigo:
+            # Generar código secuencial simple (1, 2, 3...)
+            ultimo = (
+                Establecimiento.objects
+                .filter(empresa=self.empresa)
+                .exclude(codigo="")
+                .exclude(codigo__isnull=True)
+                .values_list("codigo", flat=True)
+                .order_by("-id")
+                .first()
+            )
+            if ultimo and ultimo.isdigit():
+                siguiente_numero = int(ultimo) + 1
+            else:
+                siguiente_numero = 1
+            self.codigo = str(siguiente_numero)
+        super().save(*args, **kwargs)
  
 class ConfigFiltroReproductivo(ControlModel):
     """Valores por defecto de filtros reproductivos para un establecimiento.
@@ -642,9 +704,21 @@ class Rodeo(ControlModel):
         verbose_name_plural = _("Rodeos")
         ordering            = ["establecimiento__nombre", "nombre"]
         unique_together     = ("establecimiento", "nombre")
- 
+
     def __str__(self):
         return f"{self.establecimiento} — {self.nombre}"
+
+    def save(self, *args, **kwargs):
+        if not self.codigo:
+            ultimo = Rodeo.objects.filter(codigo__startswith='ROD-').order_by('-codigo').values_list('codigo', flat=True).first()
+            if ultimo:
+                numero = int(ultimo.split('-')[1]) + 1
+            else:
+                numero = 1
+            self.codigo = f'ROD-{numero:02d}'
+        if self.tipo:
+            self.nombre = f'Rodeo de {self.tipo.nombre}'
+        super().save(*args, **kwargs)
 
 
 # =========================================================
@@ -755,13 +829,21 @@ class AnimalBovino(ControlModel):
     rodeo                 = models.ForeignKey(Rodeo,                  verbose_name=_("Rodeo"),              on_delete=models.PROTECT,  related_name="animales")
     sexo                  = models.CharField(_("Sexo"), max_length=1, choices=SexoBovino.choices)
     fecha_nacimiento      = models.DateField(_("Fecha de nacimiento"))
+    codigo_interno        = models.CharField(
+        _("Código interno"),
+        max_length=50,
+        blank=True,
+        null=True,
+        db_index=True,
+        help_text=_("ID único generado automáticamente según patrón del establecimiento"),
+    )
     numero_nacimiento     = models.PositiveIntegerField(_("Número de nacimiento"), blank=True, null=True)
     senasa_prefijo_animal = models.CharField(_("SENASA prefijo"), max_length=1, blank=True, null=True)
     senasa_numero_animal  = models.CharField(_("SENASA número"),  max_length=3, blank=True, null=True)
     color                 = models.CharField(_("Color"),          max_length=30,  blank=True, null=True)
     nombre_apodo          = models.CharField(_("Nombre o apodo"), max_length=100, blank=True, null=True)
-    raza                  = models.ForeignKey(RazaBovino,             verbose_name=_("Raza"),                on_delete=models.PROTECT,  related_name="animales",       blank=True, null=True)
-    subraza               = models.ForeignKey(SubRaza,                verbose_name=_("Subraza"),             on_delete=models.PROTECT,  related_name="animales",       blank=True, null=True)
+    raza                  = models.ForeignKey(RazaBovino,             verbose_name=_("Raza"),                on_delete=models.PROTECT,  related_name="animales")
+    subraza               = models.ForeignKey(SubRaza,                verbose_name=_("Subraza"),             on_delete=models.PROTECT,  related_name="animales",      blank=True, null=True)
     madre                 = models.ForeignKey("self",                 verbose_name=_("Madre"),               on_delete=models.SET_NULL, related_name="hijos_madre",    blank=True, null=True)
     padre_genetico        = models.ForeignKey(PadreGenetico,          verbose_name=_("Padre genético"),      on_delete=models.SET_NULL, related_name="hijos",          blank=True, null=True)
     categoria_actual      = models.ForeignKey(CategoriaBovino,        verbose_name=_("Categoría actual"),    on_delete=models.PROTECT,  related_name="animales",       blank=True, null=True)
@@ -789,8 +871,8 @@ class AnimalBovino(ControlModel):
         es_nuevo = self.pk is None
         if es_nuevo and self.fecha_nacimiento and self.rodeo_id:
             establecimiento = self.rodeo.establecimiento
-            if not self.numero_nacimiento:
-                self.numero_nacimiento = establecimiento.siguiente_numero_nacimiento(self.fecha_nacimiento.year)
+            if not self.codigo_interno:
+                self.codigo_interno = establecimiento.siguiente_codigo_interno()
             if not self.senasa_prefijo_animal and not self.senasa_numero_animal:
                 if establecimiento.senasa_prefijo:
                     prefijo, numero = establecimiento.siguiente_senasa_animal()
@@ -808,11 +890,10 @@ class AnimalBovino(ControlModel):
         if self.padre_genetico and self.padre_genetico.animal_interno:
             if self.padre_genetico.animal_interno.sexo != SexoBovino.MACHO:
                 errors["padre_genetico"] = _("El padre genético debe ser macho.")
-        if self.subraza and self.subraza.raza_id != self.raza_id:
-            errors["subraza"] = _("La subraza debe pertenecer a la raza seleccionada.")
         if errors:
             raise ValidationError(errors)
- 
+
+
     # ---------------------------------------------------------
     # PROPERTIES — identificadores
     # ---------------------------------------------------------
@@ -1284,13 +1365,11 @@ class EventoReproductivo(ControlModel):
         if sexo not in {SexoBovino.MACHO, SexoBovino.HEMBRA}:
             raise ValidationError({"sexo": _("Sexo inválido.")})
  
+        # Si ambos padres tienen la misma raza, el ternero hereda esa raza.
+        # Si razas distintas, queda la raza de la madre (el usuario puede corregirla).
         raza_madre = self.madre.raza
         raza_padre = self.padre_genetico.raza if self.padre_genetico else None
-        if raza_madre and raza_padre and raza_madre == raza_padre:
-            raza = raza_madre
-        else:
-            raza    = RazaBovino.objects.filter(codigo="CRUZA").first()
-            subraza = None
+        raza_ternero = raza_madre if (not raza_padre or raza_madre == raza_padre) else raza_madre
  
         categoria_ternero = CategoriaBovino.objects.filter(codigo="TERNERO_PIE").first()
  
@@ -1300,8 +1379,7 @@ class EventoReproductivo(ControlModel):
             fecha_nacimiento=fecha_nacimiento,
             nombre_apodo=nombre_apodo,
             color=color,
-            raza=raza,
-            subraza=subraza,
+            raza=raza_ternero,
             madre=self.madre,
             padre_genetico=self.padre_genetico,
             categoria_actual=categoria_ternero,

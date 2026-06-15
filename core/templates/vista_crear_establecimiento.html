@@ -4,9 +4,8 @@
 
 {% block content %}
 <div class="container-fluid">
-
     {% if messages %}
-    <div class="mb-4">
+    <div class="mb-3">
         {% for message in messages %}
         <div class="alert {{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
             <i class="mdi 
@@ -30,7 +29,7 @@
                     {% if modificacion %}{% translate "Editar establecimiento" %}{% else %}{% translate "Crear establecimiento" %}{% endif %}
                 </h3>
             </div>
-            <a href="{% url 'vista_lista_establecimientos' %}" class="btn btn-outline-secondary">
+            <a href="{% url 'vista_crear_establecimiento' %}" class="btn btn-outline-secondary">
                 <i class="mdi mdi-arrow-left me-1"></i>
                 {% translate "Volver" %}
             </a>
@@ -48,43 +47,54 @@
 
                     <div class="row g-3 mb-4">
 
-                        <div class="col-md-6">
-                            <label class="form-label">{% translate "Empresa" %} <span class="text-danger">*</span></label>
-                            {{ form.empresa }}
-                            {% if form.empresa.errors %}<div class="text-danger small mt-1">{{ form.empresa.errors|join:", " }}</div>{% endif %}
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">{% translate "Ciudad" %} <span class="text-danger">*</span></label>
-                            {{ form.ciudad }}
-                            {% if form.ciudad.errors %}<div class="text-danger small mt-1">{{ form.ciudad.errors|join:", " }}</div>{% endif %}
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">{% translate "Nombre" %} <span class="text-danger">*</span></label>
-                            {{ form.nombre }}
-                            {% if form.nombre.errors %}<div class="text-danger small mt-1">{{ form.nombre.errors|join:", " }}</div>{% endif %}
-                        </div>
-
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="form-label">{% translate "Código interno" %}</label>
                             {{ form.codigo }}
                         </div>
 
-                        <div class="col-md-9">
-                            <label class="form-label">{% translate "Ubicación" %}</label>
-                            {{ form.ubicacion }}
+                        <div class="col-md-3">
+                            <label class="form-label">
+                                {% translate "Nombre" %}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.nombre }}
+                            {% if form.nombre.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.nombre.errors|join:", " }}
+                                </div>
+                            {% endif %}
                         </div>
 
-                        <div class="col-12">
-                            <label class="form-label">{% translate "Observaciones" %}</label>
-                            {{ form.observaciones }}
+                        <div class="col-md-3">
+                            <label class="form-label">
+                                {% translate "Ciudad" %}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.ciudad }}
+                            {% if form.ciudad.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.ciudad.errors|join:", " }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label d-block text-center">
+                                {% translate "Activo" %}
+                                <span class="text-danger">*</span>
+                            </label>
+                            <div class="d-flex justify-content-center">
+                                <div class="form-check">
+                                    {{ form.activo }}
+                                    <label class="form-check-label ms-2"></label>
+                                </div>
+                            </div>
+                            {% if form.activo.errors %}
+                                <div class="text-danger small mt-1 text-center">
+                                    {{ form.activo.errors|join:", " }}
+                                </div>
+                            {% endif %}
                         </div>
 
-                        <div class="col-12 d-flex align-items-center gap-2">
-                            {{ form.activo }}
-                            <label class="form-check-label mb-0">{% translate "Activo" %}</label>
-                        </div>
 
                     </div>
 
@@ -120,7 +130,6 @@
                             {% if form.non_field_errors %}
                                 <div class="text-danger small mt-1">{{ form.non_field_errors|join:", " }}</div>
                             {% endif %}
-                            <div class="form-text">Ej: <code>PU045</code> — zona/partido (2 letras) + nº establecimiento (3 dígitos)</div>
                         </div>
 
                         <!-- Breedplan -->
@@ -141,7 +150,6 @@
                             </label>
                             {{ form.hba }}
                             {% if form.hba.errors %}<div class="text-danger small mt-1">{{ form.hba.errors|join:", " }}</div>{% endif %}
-                            <div class="form-text">{% translate "Nº de registro externo de la asociación" %}</div>
                         </div>
 
                     </div>
@@ -152,11 +160,11 @@
                             <i class="mdi mdi-content-save-outline me-1"></i>
                             {% translate "Guardar" %}
                         </button>
-                        <a href="{% url 'vista_lista_establecimientos' %}" class="btn btn-secondary">
+                        <a href="{% url 'vista_crear_establecimiento' %}" class="btn btn-secondary">
                             {% translate "Cancelar" %}
                         </a>
                         {% if modificacion %}
-                        <button type="submit" name="borrar" class="btn btn-danger ms-auto"
+                        <button type="submit" name="borrar" class="btn btn-danger"
                                 onclick="return confirm('{% translate "¿Seguro que querés eliminar este establecimiento?" %}')">
                             <i class="mdi mdi-trash-can-outline me-1"></i>
                             {% translate "Borrar" %}
@@ -168,10 +176,81 @@
             </div>
         </div>
     </div>
+    <div class="card mt-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped align-middle">
+                    <thead>
+                        <tr>
+                            <th>{% translate "Nombre" %}</th>
+                            <th>{% translate "Empresa" %}</th>
+                            <th>{% translate "Ciudad" %}</th>
+                            <th>{% translate "SENASA" %}</th>
+                            <th>{% translate "Estado" %}</th>
+                            <th class="text-center">{% translate "Acciones" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for est in establecimientos %}
+                        <tr>
+                            <td>{{ est.nombre }}</td>
+                            <td>{{ est.empresa }}</td>
+                            <td>{{ est.ciudad }}</td>
+                            <td>
+                                {% if est.senasa_prefijo %}
+                                    <span class="font-monospace">{{ est.senasa_prefijo }}</span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if est.activo %}
+                                    <span class="badge-estado-activo">
+                                        <i class="mdi mdi-check-circle-outline"></i>
+                                        {% translate "Activo" %}
+                                    </span>
+                                {% else %}
+                                    <span class="badge-estado-inactivo">
+                                        <i class="mdi mdi-close-circle-outline"></i>
+                                        {% translate "Inactivo" %}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <a href="{% url 'vista_editar_establecimiento' est.id %}" class="btn btn-sm btn-outline-primary btn-ver-bovino">
+                                    <i class="mdi mdi-pencil-outline me-1"></i>
+                                    {% translate "Editar" %}
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">
+                                {% translate "No hay establecimientos cargados" %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
 {% block custom_js %}
+<style>
+    #id_activo {
+        accent-color: #2d7c3e !important;
+        width: 20px !important;
+        height: 20px !important;
+        cursor: pointer;
+    }
+    #id_activo:checked {
+        background-color: #2d7c3e !important;
+        border-color: #2d7c3e !important;
+    }
+</style>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     const zonaInput  = document.getElementById("id_senasa_zona");

@@ -60,11 +60,15 @@
                     </div>
 
                     {% if modificacion %}
-                    <div class="col-md-3">
+                    <div class="col-md-2">
+                        <label class="form-label text-muted">Código interno</label>
+                        <p class="form-control-plaintext fw-semibold ps-1 font-monospace">{{ object.codigo_interno|default:"—" }}</p>
+                    </div>
+                    <div class="col-md-2">
                         <label class="form-label text-muted">Tatuaje</label>
                         <p class="form-control-plaintext fw-semibold ps-1 font-monospace">{{ object.tatuaje|default:"—" }}</p>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label class="form-label text-muted">Caravana SENASA</label>
                         <p class="form-control-plaintext fw-semibold ps-1 font-monospace">{{ object.caravana_senasa|default:"—" }}</p>
                     </div>
@@ -75,10 +79,6 @@
                     <div class="col-md-2">
                         <label class="form-label text-muted">Nº SENASA</label>
                         <p class="form-control-plaintext fw-semibold ps-1 font-monospace">{{ object.senasa_numero_animal|default:"—" }}</p>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label text-muted">Nº nacimiento</label>
-                        <p class="form-control-plaintext fw-semibold ps-1">{{ object.numero_nacimiento|default:"—" }}</p>
                     </div>
                     {% endif %}
                 </div>
@@ -93,11 +93,6 @@
                     <div class="col-md-4">
                         <label class="form-label">Nombre / apodo</label>
                         {{ form.nombre_apodo }}
-                    </div>
-
-                    <div class="col-md-4">
-                        <label class="form-label">Color</label>
-                        {{ form.color }}
                     </div>
 
                     <div class="col-md-4">
@@ -164,7 +159,7 @@
                     <button type="submit" class="btn btn-primary">Guardar</button>
                     <a href="{% url 'vista_lista_bovinos' %}" class="btn btn-secondary">Cancelar</a>
                     {% if modificacion %}
-                    <button type="submit" name="borrar" class="btn btn-danger ms-auto">Borrar</button>
+                    <button type="submit" name="borrar" class="btn btn-danger">Borrar</button>
                     {% endif %}
                 </div>
 

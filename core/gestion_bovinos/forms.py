@@ -9,7 +9,7 @@ from .models import (
     SubRaza, Establecimiento, RegistroSanitario, PadreGenetico, GrupoServicio,
     EventoGrupoServicio, TipoEvento, Insumo, ViaAdministracion,
     DiagnosticoPreñezRodeo, MetodoDiagnostico, SesionSanitaria, TipoSanitario,
-    ConfigFiltroReproductivo,
+    ConfigFiltroReproductivo, EstadoVidaAnimal,
 )
 
 class BaseForm(ModelForm):
@@ -28,17 +28,24 @@ class EstablecimientoForm(BaseForm):
 
     class Meta:
         model  = Establecimiento
-        fields = ['empresa', 'ciudad', 'nombre', 'codigo', 'ubicacion', 'activo', 'observaciones', 'senasa_zona', 'senasa_estab', 'breedplan', 'hba']
+        fields = ['codigo', 'ciudad', 'nombre', 'patron_codigo_interno', 'senasa_zona', 'senasa_estab', 'breedplan', 'hba', 'activo']
         widgets = {
-            'empresa':       forms.Select(),
             'ciudad':        forms.Select(),
+            'nombre':        forms.TextInput(attrs={'placeholder': 'Nombre del establecimiento'}),
+            'codigo':        forms.TextInput(attrs={'readonly': 'readonly', 'class': 'form-control font-monospace', 'placeholder': 'Auto'}),
             'activo':        forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'observaciones': forms.Textarea(attrs={'rows': 3}),
-            'senasa_zona':   forms.TextInput(attrs={'maxlength': '2', 'placeholder': 'PU',  'style': 'width:70px;text-align:center;', 'class': 'form-control font-monospace text-uppercase'}),
-            'senasa_estab':  forms.TextInput(attrs={'maxlength': '3', 'placeholder': '045', 'style': 'width:70px;text-align:center;', 'class': 'form-control font-monospace', 'inputmode': 'numeric'}),
-            'breedplan':     forms.TextInput(attrs={'placeholder': 'Ej: GAL1771', 'class': 'form-control font-monospace'}),
-            'hba':           forms.TextInput(attrs={'placeholder': 'Ej: 812073',  'class': 'form-control font-monospace'}),
+            'patron_codigo_interno': forms.TextInput(attrs={'placeholder': 'Ej: AA-0000', 'class': 'form-control font-monospace'}),
+            'senasa_zona':   forms.TextInput(attrs={'maxlength': '2', 'placeholder': 'PU',  'style': 'width:60px;text-align:center;', 'class': 'form-control font-monospace text-uppercase'}),
+            'senasa_estab':  forms.TextInput(attrs={'maxlength': '3', 'placeholder': '045', 'style': 'width:60px;text-align:center;', 'class': 'form-control font-monospace', 'inputmode': 'numeric'}),
+            'breedplan':     forms.TextInput(attrs={'placeholder': 'GAL1771', 'class': 'form-control font-monospace'}),
+            'hba':           forms.TextInput(attrs={'placeholder': '812073',  'class': 'form-control font-monospace'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Remover form-control de checkbox después de que BaseForm lo aplicó
+        if isinstance(self.fields['activo'].widget, forms.CheckboxInput):
+            self.fields['activo'].widget.attrs['class'] = 'form-check-input'
 
     def clean_senasa_zona(self):
         val = self.cleaned_data.get('senasa_zona', '')
@@ -67,15 +74,14 @@ class BovinoForm(BaseForm):
         model = AnimalBovino
         fields = [
             'rodeo', 'sexo', 'fecha_nacimiento',
-            'numero_nacimiento',
             'senasa_prefijo_animal', 'senasa_numero_animal',
-            'nombre_apodo', 'color',
+            'nombre_apodo',
             'raza', 'subraza', 'madre', 'padre_genetico',
             'categoria_actual', 'estado_reproductivo', 'destino_productivo',
             'estado_vida', 'observaciones',
         ]
         widgets = {
-            'fecha_nacimiento': forms.DateInput(attrs={'type': 'date'}),
+            'fecha_nacimiento': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
             'observaciones': forms.Textarea(attrs={'rows': 3}),
             'senasa_prefijo_animal': forms.TextInput(attrs={
                 'maxlength': '1',
@@ -107,22 +113,30 @@ class BovinoForm(BaseForm):
                 sexo='H'
             ).order_by('id')
 
-        self.fields['subraza'].queryset = SubRaza.objects.none()
+        self.fields['raza'].queryset = RazaBovino.objects.filter(activo=True).order_by('nombre')
 
-        if 'raza' in self.data:
-            try:
-                raza_id = int(self.data.get('raza'))
-                self.fields['subraza'].queryset = SubRaza.objects.filter(
-                    raza_id=raza_id,
-                    activo=True
-                ).order_by('nombre')
-            except (ValueError, TypeError):
-                pass
-        elif self.instance.pk and self.instance.raza_id:
-            self.fields['subraza'].queryset = SubRaza.objects.filter(
-                raza=self.instance.raza,
-                activo=True
-            ).order_by('nombre')
+        if not self.instance.pk:
+            estado_vivo = EstadoVidaAnimal.objects.filter(nombre__icontains='Vivo').first()
+            if estado_vivo:
+                self.fields['estado_vida'].initial = estado_vivo
+
+# =========================================================
+# RODEO
+# =========================================================
+
+class RodeoForm(BaseForm):
+    class Meta:
+        model = Rodeo
+        fields = ['tipo', 'descripcion', 'capacidad', 'activo', 'observaciones']
+        widgets = {
+            'descripcion': forms.Textarea(attrs={'rows': 2}),
+            'observaciones': forms.Textarea(attrs={'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if isinstance(self.fields['activo'].widget, forms.CheckboxInput):
+            self.fields['activo'].widget.attrs['class'] = 'form-check-input'
 
 # =========================================================
 # ARMADO DE GRUPO

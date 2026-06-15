@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block content %}
+<div class="container-fluid">
+    {% if messages %}
+    <div class="mb-3">
+        {% for message in messages %}
+        <div class="alert {{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
+            <i class="mdi
+                {% if 'success' in message.tags %}mdi-check-circle
+                {% elif 'danger' in message.tags %}mdi-alert-circle
+                {% elif 'warning' in message.tags %}mdi-alert
+                {% else %}mdi-information{% endif %}
+                me-2"></i>
+            <div>{{ message }}</div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="upload-card">
+        <div class="upload-header d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-4">
+            <div>
+                <h3 class="mb-1">
+                    <i class="mdi mdi-folder me-1"></i>
+                    {% if modificacion %}{% translate "Editar rodeo" %}{% else %}{% translate "Crear rodeo" %}{% endif %}
+                </h3>
+            </div>
+            <a href="{% url 'vista_lista_rodeos' %}" class="btn btn-outline-secondary">
+                <i class="mdi mdi-arrow-left me-1"></i>
+                {% translate "Volver" %}
+            </a>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <!-- DATOS GENERALES -->
+                    <h6 class="text-muted text-uppercase fw-semibold mb-3" style="font-size:.75rem;letter-spacing:.05em;">
+                        {% translate "Datos generales" %}
+                    </h6>
+
+                    <div class="row g-3 mb-4">
+                        <!-- FILA 1: Identificación principal -->
+                        {% if not modificacion and establecimientos %}
+                        <div class="col-md-3">
+                            <label class="form-label">
+                                {% translate "Establecimiento" %}
+                                <span class="text-danger">*</span>
+                            </label>
+                            <select name="establecimiento" class="form-control" required>
+                                <option value="">{% translate "Seleccionar" %}</option>
+                                {% for est in establecimientos %}
+                                <option value="{{ est.id }}" {% if est.id|stringformat:"s" == establecimiento_id %}selected{% endif %}>
+                                    {{ est.nombre }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
+
+                        {% if modificacion %}
+                        <div class="col-md-3">
+                            <label class="form-label text-muted small">{% translate "Código" %}</label>
+                            <p class="form-control-plaintext fw-bold font-monospace">{{ rodeo.codigo }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small">{% translate "Nombre" %}</label>
+                            <p class="form-control-plaintext fw-semibold">{{ rodeo.nombre }}</p>
+                        </div>
+                        {% endif %}
+
+                        <!-- FILA 2: Tipo, Capacidad, Activo -->
+                        <div class="col-md-4">
+                            <label class="form-label">{% translate "Tipo" %}</label>
+                            {{ form.tipo }}
+                            {% if form.tipo.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.tipo.errors|join:", " }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">{% translate "Capacidad" %}</label>
+                            {{ form.capacidad }}
+                        </div>
+
+                        <div class="col-md-1 d-flex align-items-end justify-content-center pb-2">
+                            <div class="form-check">
+                                {{ form.activo }}
+                            </div>
+                        </div>
+
+                        <!-- FILA 3: Descripción -->
+                        <div class="col-12">
+                            <label class="form-label">{% translate "Descripción" %}</label>
+                            {{ form.descripcion }}
+                        </div>
+
+                        <!-- FILA 4: Observaciones -->
+                        <div class="col-12">
+                            <label class="form-label">{% translate "Observaciones" %}</label>
+                            {{ form.observaciones }}
+                        </div>
+                    </div>
+
+                    <!-- BOTONES -->
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="mdi mdi-content-save-outline me-1"></i>
+                            {% translate "Guardar" %}
+                        </button>
+                        <a href="{% url 'vista_lista_rodeos' %}" class="btn btn-secondary">
+                            {% translate "Cancelar" %}
+                        </a>
+                        {% if modificacion %}
+                        <button type="submit" name="borrar" class="btn btn-danger"
+                                onclick="return confirm('{% translate "¿Seguro que querés eliminar este rodeo?" %}')">
+                            <i class="mdi mdi-trash-can-outline me-1"></i>
+                            {% translate "Borrar" %}
+                        </button>
+                        {% endif %}
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    #id_activo {
+        accent-color: #2d7c3e !important;
+        width: 20px !important;
+        height: 20px !important;
+        cursor: pointer;
+    }
+    #id_activo:checked {
+        background-color: #2d7c3e !important;
+        border-color: #2d7c3e !important;
+    }
+</style>
+{% endblock %}
